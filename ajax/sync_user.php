@@ -1,5 +1,5 @@
 <?php
-// ajax/sync_user.php
+// /flower-lab/ajax/sync_user.php
 
 // Turn off all error reporting for AJAX requests
 error_reporting(0);
@@ -36,6 +36,7 @@ try {
     $email = $input['email'];
     $phone_number = $input['phoneNumber'] ?? '';
     $name = $input['displayName'] ?? '';
+    $skipRedirect = $input['skipRedirect'] ?? false;
 
     // Store in session
     session_start();
@@ -90,12 +91,9 @@ try {
 
     // Check for redirect
     $redirect = null;
-    if (isset($_SESSION['redirect_after_login'])) {
+    if (isset($_SESSION['redirect_after_login']) && !$skipRedirect) {
         $redirect = $_SESSION['redirect_after_login'];
         unset($_SESSION['redirect_after_login']);
-    } else {
-        // Default redirect to home page
-        $redirect = '/flower-lab/';
     }
 
     // Clean buffer before JSON output

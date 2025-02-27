@@ -1,19 +1,38 @@
 // Firebase Authentication Handling
 document.addEventListener("DOMContentLoaded", function() {
+    // Track if we've already synced to prevent infinite loops
+    let hasUserBeenSynced = false;
+
     // Check authentication state
     firebase.auth().onAuthStateChanged(function(user) {
         if (user) {
             // User is signed in
             console.log("User is signed in:", user.email);
 
-            // Store user info in session via AJAX
-            syncUserWithDatabase(user);
+            // Check if we need to sync this user
+            const lastSync = localStorage.getItem('lastUserSync');
+            const currentTime = new Date().getTime();
+
+            // Only sync if we haven't done so in this session or it's been a while
+            if (!hasUserBeenSynced || !lastSync || (currentTime - parseInt(lastSync) > 3600000)) { // 1 hour
+                console.log("Syncing user with database:", user.email);
+
+                // Store user info in session via AJAX
+                syncUserWithDatabase(user);
+
+                // Mark as synced and save timestamp
+                hasUserBeenSynced = true;
+                localStorage.setItem('lastUserSync', currentTime.toString());
+            } else {
+                console.log("Skipping user sync - already synced recently");
+            }
 
             // Update UI elements for authenticated user
             updateUIForAuthenticatedUser(user);
         } else {
             // User is signed out
             console.log("User is signed out");
+            hasUserBeenSynced = false;
 
             // Update UI elements for non-authenticated user
             updateUIForNonAuthenticatedUser();
@@ -21,52 +40,109 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
+// Ensure Lucide icons are properly initialized
+function initLucideIcons() {
+    if (window.lucide && typeof lucide.createIcons === 'function') {
+        console.log('Initializing Lucide icons');
+        lucide.createIcons();
+    } else {
+        console.warn('Lucide not available for icon initialization');
+    }
+}
+
+// Emergency fix for invisible icons
+function fixInvisibleIcons() {
+    // Direct fix for profile icon
+    const profileIcon = document.getElementById('profile-icon');
+    if (profileIcon) {
+        // Check if it has an icon
+        if (!profileIcon.querySelector('svg') && !profileIcon.querySelector('span')) {
+            // Add a default user icon if none exists
+            profileIcon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
+        }
+    }
+
+    // Ensure Lucide is initialized with a retry mechanism
+    if (window.lucide && typeof lucide.createIcons === 'function') {
+        lucide.createIcons();
+
+        // Check if icons were properly initialized
+        setTimeout(() => {
+            const icons = document.querySelectorAll('[data-lucide]');
+            let iconsInitialized = true;
+
+            icons.forEach(icon => {
+                if (!icon.querySelector('svg')) {
+                    iconsInitialized = false;
+                }
+            });
+
+            // If not all icons were initialized, try again
+            if (!iconsInitialized) {
+                console.log('Retrying icon initialization...');
+                lucide.createIcons();
+            }
+        }, 100);
+    }
+}
+
 // User dropdown toggle
 document.addEventListener('DOMContentLoaded', function() {
+
+    // Fix icons immediately
+    fixInvisibleIcons();
+
     const profileIcon = document.getElementById('profile-icon');
     const userDropdown = document.getElementById('user-dropdown');
 
+    // Initialize Lucide icons
+    if (typeof lucide !== 'undefined' && typeof lucide.createIcons === 'function') {
+        lucide.createIcons();
+    }
+
+    // Only setup dropdown toggle if both elements exist
+    // (userDropdown only exists for logged-in users)
     if (profileIcon && userDropdown) {
+        console.log('Profile icon and dropdown found - setting up toggle');
+
         profileIcon.addEventListener('click', function(e) {
-            // Only handle click for logged-in users
-            if (firebase.auth().currentUser) {
-                e.preventDefault();
-                userDropdown.classList.toggle('hidden');
+            // Check if href attribute exists and if its value is not "#"
+            // This allows non-logged in profile icon to work as a link
+            const href = profileIcon.getAttribute('href');
+            if (href && href !== '#') {
+                // Normal link behavior - will navigate to login page
+                return;
+            }
+
+            // For logged-in users with dropdown functionality
+            e.preventDefault();
+            e.stopPropagation();
+
+            console.log('Profile icon clicked - toggling dropdown');
+            userDropdown.classList.toggle('hidden');
+
+            // Re-initialize icons when dropdown is shown
+            if (!userDropdown.classList.contains('hidden') &&
+                typeof lucide !== 'undefined' &&
+                typeof lucide.createIcons === 'function') {
+                setTimeout(() => lucide.createIcons(), 10);
             }
         });
 
         // Close dropdown when clicking outside
         document.addEventListener('click', function(e) {
-            if (profileIcon && userDropdown && !profileIcon.contains(e.target) && !userDropdown.contains(e.target)) {
+            if (userDropdown &&
+                !userDropdown.classList.contains('hidden') &&
+                !profileIcon.contains(e.target) &&
+                !userDropdown.contains(e.target)) {
                 userDropdown.classList.add('hidden');
             }
         });
+    } else if (profileIcon) {
+        console.log('Profile icon found but no dropdown - link behavior only');
+    } else {
+        console.warn('Profile icon not found');
     }
-
-    // Sign out function - Update this in your existing scripts.js file
-    window.signOut = function() {
-        // Show loading indicator if you have one
-        if (typeof showNotification === 'function') {
-            showNotification('Signing out...');
-        }
-
-        // First clear the server-side session
-        fetch("/flower-lab/logout.php")
-            .then(() => {
-                // Then sign out from Firebase
-                return firebase.auth().signOut();
-            })
-            .then(function() {
-                // Sign-out successful, redirect to index page
-                window.location.href = "/flower-lab/index.php";
-            })
-            .catch(function(error) {
-                console.error("Sign out error:", error);
-
-                // Still try to redirect to index page
-                window.location.href = "/flower-lab/index.php";
-            });
-    };
 });
 
 // Function to update UI for authenticated user
@@ -249,12 +325,7 @@ function syncUserWithDatabase(user) {
                 lastLogin: new Date().toISOString()
             }));
 
-            // Redirect if needed
-            if (data.redirect) {
-                window.location.href = data.redirect;
-            }
-
-            return data;
+            return data; // Return data so login handler can use it
         })
         .catch(error => {
             console.error("Error syncing user:", error);
@@ -295,24 +366,16 @@ function syncUserWithDatabase(user) {
                         lastLogin: new Date().toISOString()
                     }));
 
-                    // Redirect to appropriate page
-                    if (data.redirect) {
-                        window.location.href = data.redirect;
-                    } else {
-                        window.location.href = '/flower-lab/';
-                    }
-
                     return data;
                 })
                 .catch(finalError => {
                     console.error("Fallback sync also failed:", finalError);
 
-                    // Last resort - redirect to home page after a short delay
-                    setTimeout(() => {
-                        window.location.href = '/flower-lab/';
-                    }, 1000);
-
-                    throw finalError;
+                    // Return a basic object with redirect to home
+                    return {
+                        success: true,
+                        redirect: '/flower-lab/'
+                    };
                 });
         });
 }

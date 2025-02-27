@@ -1,9 +1,11 @@
 <?php
+// /flower-lab/includes/auth.php
+
 require_once dirname(__DIR__) . '/includes/db.php';
 
 // Check if user is logged in via Firebase
 function isLoggedIn() {
-    return isset($_SESSION['firebase_uid']);
+    return isset($_SESSION['firebase_uid']) && !empty($_SESSION['firebase_uid']);
 }
 
 // Get current user ID from database
@@ -45,10 +47,6 @@ function getCurrentUser() {
     if ($result->num_rows > 0) {
         // Fetch and return the user data
         $user = $result->fetch_assoc();
-        
-        // For debugging
-        error_log("Current user data: " . json_encode($user));
-        
         return $user;
     }
     
@@ -74,7 +72,7 @@ function syncUserWithFirebase($firebase_uid, $email, $phone_number, $name = null
         return $user['id'];
     } else {
         // Create new user
-        $stmt = $db->prepare("INSERT INTO users (firebase_uid, email, phone_number, name) VALUES (?, ?, ?, ?)");
+        $stmt = $db->prepare("INSERT INTO users (firebase_uid, email, phone_number, name, created_at, updated_at) VALUES (?, ?, ?, ?, NOW(), NOW())");
         $stmt->bind_param("ssss", $firebase_uid, $email, $phone_number, $name);
         $stmt->execute();
         return $db->insert_id;
@@ -106,4 +104,3 @@ function requireAdmin() {
         exit;
     }
 }
-?>

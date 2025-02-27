@@ -1,5 +1,15 @@
 // Notification System for User Notifications
 document.addEventListener('DOMContentLoaded', function() {
+            // Check if we're on a login/register page where notifications shouldn't be initialized
+            const isLoginPage = window.location.pathname.includes('/login.php') ||
+                window.location.pathname.includes('/register.php') ||
+                window.location.pathname.includes('/reset_password.php');
+
+            // Skip notification setup on login pages
+            if (isLoginPage) {
+                console.log('Skipping notification initialization on login page');
+                return;
+            }
             // Elements
             const profileIcon = document.getElementById('profile-icon');
             const userDropdown = document.getElementById('user-dropdown');
@@ -12,63 +22,78 @@ document.addEventListener('DOMContentLoaded', function() {
             const markAllReadBtn = document.getElementById('mark-all-read');
             const viewNotificationsBtn = document.getElementById('view-notifications');
             const closeNotificationsBtn = document.getElementById('close-notifications');
+            const autoReadTimer = document.getElementById('auto-read-timer');
+
+            // Debug elements
+            console.log('Notification elements loaded:', {
+                notificationDropdown,
+                notificationBackdrop,
+                viewNotificationsBtn,
+                notificationList
+            });
 
             // Timer for auto-marking as read
             let autoMarkAsReadTimer = null;
-
-            // Show/hide user dropdown when clicking profile icon
-            if (profileIcon && userDropdown) {
-                profileIcon.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-
-                    // If notifications dropdown is open, close it
-                    if (!notificationDropdown.classList.contains('hidden')) {
-                        notificationDropdown.classList.add('hidden');
-                    }
-
-                    // Toggle user dropdown
-                    userDropdown.classList.toggle('hidden');
-
-                    // If showing dropdown and we have unread notifications, update badge
-                    if (!userDropdown.classList.contains('hidden')) {
-                        updateDropdownNotificationBadge();
-                    }
-                });
-            }
 
             // Show notifications panel when clicking on "Notifications" in user dropdown
             if (viewNotificationsBtn && notificationDropdown) {
                 viewNotificationsBtn.addEventListener('click', function(e) {
                     e.preventDefault();
+                    e.stopPropagation(); // Stop event bubbling
+
+                    console.log('View notifications button clicked');
 
                     // Hide user dropdown
                     if (userDropdown) {
                         userDropdown.classList.add('hidden');
                     }
 
-                    // Show notifications panel
-                    notificationDropdown.classList.remove('hidden');
+                    // Show notifications panel with animation
+                    toggleNotificationDropdown(true);
 
                     // Fetch notifications
                     fetchNotifications();
 
                     // Set timer to auto-mark as read after 5 seconds
-                    autoMarkAsReadTimer = setTimeout(function() {
-                        // Get count of unread notifications
-                        const unreadCount = parseInt(notificationCount.textContent || '0');
-                        if (unreadCount > 0) {
-                            // Only call if there are unread notifications
-                            markAllNotificationsAsRead(true); // true = silent mode (no notification)
-                        }
-                    }, 5000); // 5 seconds delay
+                    if (autoReadTimer) {
+                        autoReadTimer.classList.remove('hidden');
+                        let countdown = 5;
+
+                        autoReadTimer.textContent = `Auto-reading in ${countdown}s...`;
+
+                        const countdownInterval = setInterval(() => {
+                            countdown--;
+                            if (countdown <= 0) {
+                                clearInterval(countdownInterval);
+                                autoReadTimer.classList.add('hidden');
+                            } else {
+                                autoReadTimer.textContent = `Auto-reading in ${countdown}s...`;
+                            }
+                        }, 1000);
+
+                        autoMarkAsReadTimer = setTimeout(function() {
+                            // Get count of unread notifications
+                            const unreadCount = parseInt(notificationCount.textContent || '0');
+                            if (unreadCount > 0) {
+                                // Only call if there are unread notifications
+                                markAllNotificationsAsRead(true); // true = silent mode (no notification)
+                            }
+                        }, 5000); // 5 seconds delay
+                    }
                 });
+            } else {
+                console.error('Notification button or dropdown not found');
             }
 
             // Close notifications panel
             if (closeNotificationsBtn) {
-                closeNotificationsBtn.addEventListener('click', function() {
-                    notificationDropdown.classList.add('hidden');
+                closeNotificationsBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Close notifications button clicked');
+
+                    // Use the animation function to hide
+                    toggleNotificationDropdown(false);
 
                     // Clear timer if dropdown is closed
                     if (autoMarkAsReadTimer) {
@@ -80,8 +105,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Close notifications panel when clicking on backdrop
             if (notificationBackdrop) {
-                notificationBackdrop.addEventListener('click', function() {
-                    notificationDropdown.classList.add('hidden');
+                notificationBackdrop.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Notification backdrop clicked');
+
+                    // Use the animation function to hide
+                    toggleNotificationDropdown(false);
 
                     // Clear timer if dropdown is closed
                     if (autoMarkAsReadTimer) {
@@ -95,6 +125,22 @@ document.addEventListener('DOMContentLoaded', function() {
             document.addEventListener('click', function(e) {
                 if (profileIcon && userDropdown && !profileIcon.contains(e.target) && !userDropdown.contains(e.target)) {
                     userDropdown.classList.add('hidden');
+                }
+
+                // If notification dropdown is visible and click is outside its content
+                if (notificationDropdown &&
+                    !notificationDropdown.classList.contains('hidden') &&
+                    !e.target.closest('.relative.bg-white')) {
+
+                    console.log('Document click detected outside notification content');
+                    notificationDropdown.style.display = 'none';
+                    notificationDropdown.classList.add('hidden');
+
+                    // Clear timer if dropdown is closed
+                    if (autoMarkAsReadTimer) {
+                        clearTimeout(autoMarkAsReadTimer);
+                        autoMarkAsReadTimer = null;
+                    }
                 }
             });
 
@@ -110,6 +156,45 @@ document.addEventListener('DOMContentLoaded', function() {
                         autoMarkAsReadTimer = null;
                     }
                 });
+            }
+
+            // Helper function to safely show/hide notification dropdown with animation
+            function toggleNotificationDropdown(show) {
+                const notificationDropdown = document.getElementById('notification-dropdown');
+                if (!notificationDropdown) return;
+
+                if (show) {
+                    // Ensure proper styling for the container
+                    notificationDropdown.style.position = 'fixed';
+                    notificationDropdown.style.inset = '0';
+                    notificationDropdown.style.width = '100vw';
+                    notificationDropdown.style.height = '100vh';
+                    notificationDropdown.style.display = 'flex';
+                    notificationDropdown.style.alignItems = 'center';
+                    notificationDropdown.style.justifyContent = 'center';
+                    notificationDropdown.style.zIndex = '9999';
+
+                    // Remove any closing class
+                    notificationDropdown.classList.remove('closing');
+
+                    // Show dropdown
+                    notificationDropdown.classList.remove('hidden');
+                    document.body.style.overflow = 'hidden'; // Prevent body scrolling
+                    console.log('Notification dropdown shown');
+                } else {
+                    // Add closing class for animation
+                    notificationDropdown.classList.add('closing');
+
+                    // Hide after animation completes
+                    setTimeout(() => {
+                        notificationDropdown.classList.add('hidden');
+                        document.body.style.overflow = ''; // Restore body scrolling
+                        console.log('Notification dropdown hidden');
+
+                        // Remove closing class
+                        notificationDropdown.classList.remove('closing');
+                    }, 200); // Match the animation duration
+                }
             }
 
             // Function to update the notification badge in the dropdown

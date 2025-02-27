@@ -38,6 +38,7 @@ try {
     $email = $input['email'];
     $phone = $input['phoneNumber'] ?? '';
     $name = $input['displayName'] ?? '';
+    $skipRedirect = $input['skipRedirect'] ?? false;
     
     // Include database connection
     require_once dirname(__DIR__) . '/includes/db.php';
@@ -100,14 +101,11 @@ try {
         error_log("Created new user: $email with firebase_uid: $firebase_uid, ID: $userId");
     }
     
-    // Check for redirect
+    // Check for redirect - only set if we need to redirect after login
     $redirect = null;
-    if (isset($_SESSION['redirect_after_login'])) {
+    if (isset($_SESSION['redirect_after_login']) && !$skipRedirect) {
         $redirect = $_SESSION['redirect_after_login'];
         unset($_SESSION['redirect_after_login']);
-    } else {
-        // Default redirect to home page
-        $redirect = '/flower-lab/';
     }
     
     // Clean the buffer to ensure no stray output
@@ -117,7 +115,7 @@ try {
     echo json_encode([
         'success' => true,
         'message' => 'User synced successfully',
-        'redirect' => $redirect
+        'redirect' => $redirect  // This will be null for normal syncs
     ]);
     
 } catch (Exception $e) {

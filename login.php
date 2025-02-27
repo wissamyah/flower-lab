@@ -163,29 +163,105 @@ include 'includes/header.php';
                 });
         });
         
-        // Handle Google sign-in
+        // Handle Google sign-in with improved debugging
         const googleSignInButton = document.getElementById('google-signin');
         
-        googleSignInButton.addEventListener('click', function() {
-            const provider = new firebase.auth.GoogleAuthProvider();
+        if (googleSignInButton) {
+            console.log('Google sign-in button found, attaching event listener');
             
-            firebase.auth().signInWithPopup(provider)
-                .then((result) => {
-                    // Google sign-in successful
-                    const user = result.user;
+            googleSignInButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Google sign-in button clicked');
+                
+                // Show loading state
+                const loadingElement = document.createElement('div');
+                loadingElement.id = 'loading-indicator';
+                loadingElement.className = 'fixed inset-0 bg-black bg-opacity-25 flex items-center justify-center z-50';
+                loadingElement.innerHTML = '<div class="bg-white p-4 rounded-lg shadow-lg"><p class="text-gray-800">Signing in with Google...</p></div>';
+                document.body.appendChild(loadingElement);
+                
+                // Check if Firebase is initialized
+                if (!firebase || !firebase.auth) {
+                    console.error('Firebase not initialized properly');
+                    alert('Authentication service is not available. Please try again later.');
                     
-                    // Sync with database
-                    return syncUserWithDatabase(user);
-                })
-                .catch((error) => {
-                    console.error('Google sign-in error:', error);
+                    if (loadingElement) {
+                        document.body.removeChild(loadingElement);
+                    }
+                    return;
+                }
+                
+                // Create Google provider
+                try {
+                    console.log('Creating Google Auth Provider');
+                    const provider = new firebase.auth.GoogleAuthProvider();
                     
-                    // Show error
-                    loginError.textContent = 'Google sign-in failed. Please try again.';
-                    loginError.classList.remove('hidden');
-                });
-        });
+                    // Add scopes if needed
+                    provider.addScope('email');
+                    provider.addScope('profile');
+                    
+                    console.log('Starting Google sign-in popup');
+                    
+                    // Sign in with popup
+                    firebase.auth().signInWithPopup(provider)
+                        .then((result) => {
+                            console.log('Google sign-in successful');
+                            
+                            // Get the user
+                            const user = result.user;
+                            console.log('Signed in user:', user.email);
+                            
+                            // Update loading message
+                            loadingElement.innerHTML = '<div class="bg-white p-4 rounded-lg shadow-lg"><p class="text-gray-800">Login successful! Redirecting...</p></div>';
+                            
+                            // Force redirect to home page after successful sign-in
+                            window.location.href = '/flower-lab/';
+                        })
+                        .catch((error) => {
+                            console.error('Google sign-in error:', error);
+                            
+                            // Remove loading indicator
+                            if (loadingElement) {
+                                document.body.removeChild(loadingElement);
+                            }
+                            
+                            // Show detailed error
+                            let errorMessage = 'Google sign-in failed: ' + error.message;
+                            alert(errorMessage);
+                            
+                            // Also show in UI
+                            const loginError = document.getElementById('login-error');
+                            if (loginError) {
+                                loginError.textContent = errorMessage;
+                                loginError.classList.remove('hidden');
+                            }
+                        });
+                } catch (error) {
+                    console.error('Error in Google sign-in setup:', error);
+                    
+                    // Remove loading indicator
+                    if (loadingElement) {
+                        document.body.removeChild(loadingElement);
+                    }
+                    
+                    alert('Error setting up authentication: ' + error.message);
+                }
+            });
+        } else {
+            console.error('Google sign-in button not found');
+        }
     });
 </script>
 
+<script>
+    // Ensure all script blocks are properly closed
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Login page fully loaded');
+        
+        // Initialize Lucide icons
+        if (window.lucide && typeof lucide.createIcons === 'function') {
+            lucide.createIcons();
+        }
+    });
+</script>
 <?php include 'includes/footer.php'; ?>

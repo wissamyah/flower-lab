@@ -8,18 +8,21 @@ ini_set('display_errors', 0);
 // Start with a clean output buffer
 ob_start();
 
-// Include the database connection file
-require_once dirname(__DIR__) . '/includes/db.php';
-
 // Explicitly set content type
 header('Content-Type: application/json');
 
 try {
+    // Include the database connection file
+    require_once dirname(__DIR__) . '/includes/db.php';
+
     // Get JSON input
     $jsonInput = file_get_contents('php://input');
     $input = json_decode($jsonInput, true);
 
     if (!$input || !isset($input['email'])) {
+        // Clean buffer before sending JSON response
+        ob_clean();
+        
         echo json_encode([
             'success' => false,
             'message' => 'Invalid request data'
@@ -28,7 +31,7 @@ try {
         exit;
     }
 
-    // Use Firebase UID from the input (important fix)
+    // Use Firebase UID from the input
     $firebase_uid = $input['uid'] ?? ('firebase_' . uniqid());
     $email = $input['email'];
     $phone_number = $input['phoneNumber'] ?? '';
@@ -37,6 +40,7 @@ try {
     // Store in session
     session_start();
     $_SESSION['firebase_uid'] = $firebase_uid;
+    $_SESSION['user_email'] = $email;
 
     // Get database connection
     $db = getDB();
@@ -89,8 +93,14 @@ try {
     if (isset($_SESSION['redirect_after_login'])) {
         $redirect = $_SESSION['redirect_after_login'];
         unset($_SESSION['redirect_after_login']);
+    } else {
+        // Default redirect to home page
+        $redirect = '/flower-lab/';
     }
 
+    // Clean buffer before JSON output
+    ob_clean();
+    
     // Output success response
     echo json_encode([
         'success' => true,
@@ -99,6 +109,9 @@ try {
     ]);
     
 } catch (Exception $e) {
+    // Clean buffer before error response
+    ob_clean();
+    
     // Return error response
     echo json_encode([
         'success' => false,

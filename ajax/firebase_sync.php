@@ -5,17 +5,17 @@
 error_reporting(0);
 ini_set('display_errors', 0);
 
-// Start output buffering
-ob_start();
-
-// Set content type to JSON
+// Make sure we're only sending JSON
 header('Content-Type: application/json');
+
+// Start output buffering to ensure no stray output
+ob_start();
 
 try {
     // Get input data
     $input = json_decode(file_get_contents('php://input'), true);
     
-    // Log received data for debugging
+    // Log received data for debugging (optional)
     error_log('Firebase sync received: ' . json_encode($input));
     
     if (!$input || !isset($input['email'])) {
@@ -110,6 +110,9 @@ try {
         $redirect = '/flower-lab/';
     }
     
+    // Clean the buffer to ensure no stray output
+    ob_clean();
+    
     // Return success response
     echo json_encode([
         'success' => true,
@@ -118,6 +121,10 @@ try {
     ]);
     
 } catch (Exception $e) {
+    // Clean the buffer
+    ob_clean();
+    
+    // Return error response
     echo json_encode([
         'success' => false,
         'message' => 'Error: ' . $e->getMessage()
@@ -127,6 +134,6 @@ try {
     error_log('Firebase sync error: ' . $e->getMessage());
 }
 
-// Flush output buffer and end script
+// End output buffer
 ob_end_flush();
 exit;

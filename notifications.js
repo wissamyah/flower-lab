@@ -2,47 +2,72 @@
 document.addEventListener('DOMContentLoaded', function() {
             // Elements
             const profileIcon = document.getElementById('profile-icon');
+            const userDropdown = document.getElementById('user-dropdown');
             const notificationDropdown = document.getElementById('notification-dropdown');
+            const notificationBackdrop = document.getElementById('notification-backdrop');
             const notificationIndicator = document.getElementById('profile-notification-indicator');
+            const dropdownNotificationBadge = document.getElementById('dropdown-notification-badge');
             const notificationList = document.getElementById('notification-list');
             const notificationCount = document.getElementById('notification-count');
             const markAllReadBtn = document.getElementById('mark-all-read');
+            const viewNotificationsBtn = document.getElementById('view-notifications');
+            const closeNotificationsBtn = document.getElementById('close-notifications');
 
             // Timer for auto-marking as read
             let autoMarkAsReadTimer = null;
 
-            // Show/hide notification dropdown
-            if (profileIcon) {
+            // Show/hide user dropdown when clicking profile icon
+            if (profileIcon && userDropdown) {
                 profileIcon.addEventListener('click', function(e) {
                     e.preventDefault();
-                    notificationDropdown.classList.toggle('hidden');
+                    e.stopPropagation();
 
-                    // If showing dropdown, check for new notifications
+                    // If notifications dropdown is open, close it
                     if (!notificationDropdown.classList.contains('hidden')) {
-                        fetchNotifications();
+                        notificationDropdown.classList.add('hidden');
+                    }
 
-                        // Set timer to auto-mark as read after 5 seconds
-                        autoMarkAsReadTimer = setTimeout(function() {
-                            // Get count of unread notifications
-                            const unreadCount = parseInt(notificationCount.textContent || '0');
-                            if (unreadCount > 0) {
-                                // Only call if there are unread notifications
-                                markAllNotificationsAsRead(true); // true = silent mode (no notification)
-                            }
-                        }, 5000); // 5 seconds delay
-                    } else {
-                        // Clear timer if dropdown is closed
-                        if (autoMarkAsReadTimer) {
-                            clearTimeout(autoMarkAsReadTimer);
-                            autoMarkAsReadTimer = null;
-                        }
+                    // Toggle user dropdown
+                    userDropdown.classList.toggle('hidden');
+
+                    // If showing dropdown and we have unread notifications, update badge
+                    if (!userDropdown.classList.contains('hidden')) {
+                        updateDropdownNotificationBadge();
                     }
                 });
             }
 
-            // Close dropdown when clicking outside
-            document.addEventListener('click', function(e) {
-                if (profileIcon && notificationDropdown && !profileIcon.contains(e.target) && !notificationDropdown.contains(e.target)) {
+            // Show notifications panel when clicking on "Notifications" in user dropdown
+            if (viewNotificationsBtn && notificationDropdown) {
+                viewNotificationsBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+
+                    // Hide user dropdown
+                    if (userDropdown) {
+                        userDropdown.classList.add('hidden');
+                    }
+
+                    // Show notifications panel
+                    notificationDropdown.classList.remove('hidden');
+
+                    // Fetch notifications
+                    fetchNotifications();
+
+                    // Set timer to auto-mark as read after 5 seconds
+                    autoMarkAsReadTimer = setTimeout(function() {
+                        // Get count of unread notifications
+                        const unreadCount = parseInt(notificationCount.textContent || '0');
+                        if (unreadCount > 0) {
+                            // Only call if there are unread notifications
+                            markAllNotificationsAsRead(true); // true = silent mode (no notification)
+                        }
+                    }, 5000); // 5 seconds delay
+                });
+            }
+
+            // Close notifications panel
+            if (closeNotificationsBtn) {
+                closeNotificationsBtn.addEventListener('click', function() {
                     notificationDropdown.classList.add('hidden');
 
                     // Clear timer if dropdown is closed
@@ -50,6 +75,26 @@ document.addEventListener('DOMContentLoaded', function() {
                         clearTimeout(autoMarkAsReadTimer);
                         autoMarkAsReadTimer = null;
                     }
+                });
+            }
+
+            // Close notifications panel when clicking on backdrop
+            if (notificationBackdrop) {
+                notificationBackdrop.addEventListener('click', function() {
+                    notificationDropdown.classList.add('hidden');
+
+                    // Clear timer if dropdown is closed
+                    if (autoMarkAsReadTimer) {
+                        clearTimeout(autoMarkAsReadTimer);
+                        autoMarkAsReadTimer = null;
+                    }
+                });
+            }
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (profileIcon && userDropdown && !profileIcon.contains(e.target) && !userDropdown.contains(e.target)) {
+                    userDropdown.classList.add('hidden');
                 }
             });
 
@@ -65,6 +110,19 @@ document.addEventListener('DOMContentLoaded', function() {
                         autoMarkAsReadTimer = null;
                     }
                 });
+            }
+
+            // Function to update the notification badge in the dropdown
+            function updateDropdownNotificationBadge() {
+                if (!dropdownNotificationBadge) return;
+
+                const count = parseInt(notificationCount.textContent || '0');
+                if (count > 0) {
+                    dropdownNotificationBadge.textContent = count;
+                    dropdownNotificationBadge.classList.remove('hidden');
+                } else {
+                    dropdownNotificationBadge.classList.add('hidden');
+                }
             }
 
             // Fetch notifications from server
@@ -121,8 +179,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (unreadNotifications.length > 0) {
                         notificationCount.textContent = unreadNotifications.length;
                         notificationIndicator.classList.remove('hidden');
+
+                        // Also update dropdown badge
+                        updateDropdownNotificationBadge();
                     } else {
                         notificationIndicator.classList.add('hidden');
+                        if (dropdownNotificationBadge) {
+                            dropdownNotificationBadge.classList.add('hidden');
+                        }
                     }
                 }
 
@@ -213,6 +277,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, 30000);
 });
+
 
 // Mark notification as read
 function markNotificationAsRead(notificationId, button) {

@@ -206,30 +206,36 @@ function syncUserWithDatabase(user) {
         return Promise.reject('No user provided');
     }
 
-    // Get the ID token
-    return user.getIdToken()
-        .then(function(idToken) {
-            console.log('Got ID token for user:', user.email);
+    // Prepare user data for synchronization
+    const userData = {
+        uid: user.uid,
+        email: user.email,
+        phoneNumber: user.phoneNumber || "",
+        displayName: user.displayName || "",
+    };
 
-            // Send to the server
-            return fetch("/flower-lab/ajax/firebase_sync.php", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    idToken: idToken,
-                    uid: user.uid,
-                    email: user.email,
-                    phoneNumber: user.phoneNumber || "",
-                    displayName: user.displayName || "",
-                }),
-            });
+    console.log('Syncing user with database:', userData.email);
+
+    // Send to the server
+    return fetch("/flower-lab/ajax/firebase_sync.php", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(userData),
         })
         .then(response => {
+            // Check if response is OK
             if (!response.ok) {
                 throw new Error('Network response was not ok: ' + response.status);
             }
+
+            // Check content type to ensure we're getting JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Expected JSON response but got: ' + contentType);
+            }
+
             return response.json();
         })
         .then(data => {
@@ -246,9 +252,6 @@ function syncUserWithDatabase(user) {
             // Redirect if needed
             if (data.redirect) {
                 window.location.href = data.redirect;
-            } else {
-                // Default to home page
-                window.location.href = '/flower-lab/';
             }
 
             return data;
@@ -256,22 +259,43 @@ function syncUserWithDatabase(user) {
         .catch(error => {
             console.error("Error syncing user:", error);
 
-            // Try a fallback with minimal data
-            return fetch("/flower-lab/ajax/firebase_sync.php", {
+            // Try a fallback with minimal data - no need for ID token
+            return fetch("/flower-lab/ajax/sync_user.php", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
                         uid: user.uid,
-                        email: user.email
+                        email: user.email,
+                        displayName: user.displayName || ""
                     }),
                 })
-                .then(response => response.json())
+                .then(response => {
+                    // Validate response
+                    if (!response.ok) {
+                        throw new Error('Fallback sync failed: ' + response.status);
+                    }
+
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        throw new Error('Expected JSON from fallback but got: ' + contentType);
+                    }
+
+                    return response.json();
+                })
                 .then(data => {
                     console.log("Fallback sync result:", data);
 
-                    // Still redirect to home or specified location
+                    // Store minimal user info
+                    localStorage.setItem('flowerLabUser', JSON.stringify({
+                        uid: user.uid,
+                        email: user.email,
+                        displayName: user.displayName || '',
+                        lastLogin: new Date().toISOString()
+                    }));
+
+                    // Redirect to appropriate page
                     if (data.redirect) {
                         window.location.href = data.redirect;
                     } else {
@@ -283,7 +307,7 @@ function syncUserWithDatabase(user) {
                 .catch(finalError => {
                     console.error("Fallback sync also failed:", finalError);
 
-                    // Last resort: just go to home page
+                    // Last resort - redirect to home page after a short delay
                     setTimeout(() => {
                         window.location.href = '/flower-lab/';
                     }, 1000);

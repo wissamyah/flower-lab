@@ -146,31 +146,41 @@ require_once dirname(__DIR__) . '/includes/auth.php';
                                 <a href="/flower-lab/wishlist.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                     Your Wishlist
                                 </a>
+                                <button type="button" id="view-notifications" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    Notifications
+                                    <span id="dropdown-notification-badge" class="ml-1 px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full hidden">0</span>
+                                </button>
                                 <a href="#" onclick="signOut(); return false;" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">
                                     Sign Out
                                 </a>
                             </div>
                         </div>
-                        <?php endif; ?>
                         
-                        <!-- Notification dropdown (hidden by default) -->
-                        <div id="notification-dropdown" class="hidden absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg z-50 overflow-hidden border border-gray-200">
-                            <div class="p-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-                                <h3 class="font-medium text-gray-800">Notifications</h3>
-                                <div>
-                                    <span id="auto-read-timer" class="text-xs text-gray-500 mr-2 hidden">Auto-reading in 5s...</span>
-                                    <a href="#" id="mark-all-read" class="text-xs text-primary-dark hover:underline">Mark all as read</a>
+                        <!-- Notification dropdown (as a separate panel, not part of the user dropdown) -->
+                        <div id="notification-dropdown" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+                            <div class="absolute inset-0 bg-black bg-opacity-25" id="notification-backdrop"></div>
+                            <div class="relative bg-white w-full max-w-md rounded-lg shadow-lg overflow-hidden border border-gray-200 mx-4">
+                                <div class="p-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                                    <h3 class="font-medium text-gray-800">Notifications</h3>
+                                    <div class="flex items-center">
+                                        <span id="auto-read-timer" class="text-xs text-gray-500 mr-2 hidden">Auto-reading in 5s...</span>
+                                        <a href="#" id="mark-all-read" class="text-xs text-primary-dark hover:underline">Mark all as read</a>
+                                        <button type="button" id="close-notifications" class="ml-2 text-gray-400 hover:text-gray-500">
+                                            <i data-lucide="x" class="h-4 w-4"></i>
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                            <div id="notification-list" class="max-h-80 overflow-y-auto">
-                                <div class="p-4 text-center text-sm text-gray-500">
-                                    No new notifications
+                                <div id="notification-list" class="max-h-80 overflow-y-auto">
+                                    <div class="p-4 text-center text-sm text-gray-500">
+                                        No new notifications
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="p-3 bg-gray-50 border-t border-gray-200 text-center">
-                                <a href="/flower-lab/profile.php" class="text-xs text-primary-dark hover:underline">View all in profile</a>
+                                <div class="p-3 bg-gray-50 border-t border-gray-200 text-center">
+                                    <a href="/flower-lab/profile.php" class="text-xs text-primary-dark hover:underline">View all in profile</a>
+                                </div>
                             </div>
                         </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

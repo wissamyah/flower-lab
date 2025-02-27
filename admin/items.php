@@ -187,11 +187,46 @@ while ($row = $productsResult->fetch_assoc()) {
                                    class="w-full p-2 border border-gray-300 rounded" required>
                         </div>
                         
-                        <div>
-                            <label for="image_url" class="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
-                            <input type="text" id="image_url" name="image_url" 
-                                   value="<?= $product ? htmlspecialchars($product['image_url'] ?? '') : '' ?>" 
-                                   class="w-full p-2 border border-gray-300 rounded">
+                        <div class="mb-4">
+                            <label for="image_upload" class="block text-sm font-medium text-gray-700 mb-1">Product Image</label>
+                            
+                            <div class="flex items-stretch">
+                                <div class="relative flex-grow mb-2">
+                                    <input type="text" id="image_url" name="image_url" 
+                                        class="w-full h-10 px-3 py-2 border border-gray-300 rounded-l focus:border-primary focus:ring-0" 
+                                        placeholder="Image URL or upload an image">
+                                    <div id="image_url_preview" class="absolute right-2 top-1/2 transform -translate-y-1/2 hidden">
+                                        <i data-lucide="check" class="h-5 w-5 text-green-500"></i>
+                                    </div>
+                                </div>
+                                <label for="file_upload" class="inline-flex items-center justify-center h-10 px-4 border border-gray-300 border-l-0 rounded-r bg-gray-50 text-sm text-gray-700 cursor-pointer hover:bg-gray-100 transition">
+                                    <i data-lucide="upload" class="h-4 w-4 mr-1"></i>
+                                    Browse
+                                </label>
+                            </div>
+                            
+                            <input type="file" id="file_upload" name="product_image" class="hidden" accept=".jpg,.jpeg,.png,.gif,.webp">
+                            
+                            <!-- Image preview -->
+                            <div id="image_preview" class="mt-2 hidden">
+                                <div class="relative w-40 h-40 bg-gray-100 rounded overflow-hidden border border-gray-200">
+                                    <img id="preview_image" src="#" alt="Preview" class="w-full h-full object-cover">
+                                    <button type="button" id="remove_image" class="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-700">
+                                        <i data-lucide="x" class="h-4 w-4"></i>
+                                    </button>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Image Preview</p>
+                            </div>
+                            
+                            <div class="mt-1">
+                                <div id="upload_progress" class="hidden">
+                                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                        <div id="upload_progress_bar" class="bg-primary h-2.5 rounded-full" style="width: 0%"></div>
+                                    </div>
+                                    <p id="upload_status" class="text-xs text-gray-500 mt-1">Uploading... 0%</p>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Max file size: 2MB. Allowed formats: JPG, PNG, GIF, WEBP</p>
+                            </div>
                         </div>
                     </div>
                     
@@ -223,34 +258,43 @@ while ($row = $productsResult->fetch_assoc()) {
                 
                 <div class="overflow-y-auto max-h-[600px]">
                     <ul class="divide-y divide-gray-100">
-                        <?php foreach ($products as $p): ?>
-                            <li>
-                                <a href="/flower-lab/admin/items.php?id=<?= $p['id'] ?>" 
-                                   class="block p-4 hover:bg-gray-50 <?= ($productId == $p['id']) ? 'bg-primary-light' : '' ?>">
-                                    <div class="flex justify-between">
-                                        <h3 class="font-medium text-gray-800"><?= htmlspecialchars($p['title']) ?></h3>
-                                        <span class="text-sm">
-                                            <?php if ($p['stock'] <= 0): ?>
-                                                <span class="text-red-600">Out of Stock</span>
-                                            <?php else: ?>
-                                                <span class="text-green-600">In Stock</span>
-                                            <?php endif; ?>
-                                        </span>
-                                    </div>
-                                    <div class="mt-1 flex justify-between text-sm">
-                                        <span class="text-gray-500"><?= htmlspecialchars($p['category']) ?></span>
-                                        <span class="font-medium">
-                                            <?php if ($p['discount']): ?>
-                                                <span class="line-through text-gray-400 mr-1">$<?= number_format($p['price'], 2) ?></span>
-                                                <span class="text-primary-dark">$<?= number_format($p['price'] - $p['discount'], 2) ?></span>
-                                            <?php else: ?>
-                                                <span>$<?= number_format($p['price'], 2) ?></span>
-                                            <?php endif; ?>
-                                        </span>
-                                    </div>
-                                </a>
-                            </li>
-                        <?php endforeach; ?>
+                    <?php foreach ($products as $p): ?>
+                        <li>
+                            <a href="/flower-lab/admin/items.php?id=<?= $p['id'] ?>" 
+                            class="block p-4 hover:bg-gray-50 <?= ($productId == $p['id']) ? 'bg-primary-light' : '' ?>">
+                                <div class="flex justify-between">
+                                    <h3 class="font-medium text-gray-800"><?= htmlspecialchars($p['title']) ?></h3>
+                                    <span class="text-sm">
+                                        <?php if ($p['stock'] <= 0): ?>
+                                            <span class="text-red-600">Out of Stock</span>
+                                        <?php else: ?>
+                                            <span class="text-green-600">In Stock (<?= $p['stock'] ?>)</span>
+                                        <?php endif; ?>
+                                    </span>
+                                </div>
+                                <div class="mt-1 flex justify-between text-sm">
+                                    <span class="text-gray-500"><?= htmlspecialchars($p['category']) ?></span>
+                                    <span class="font-medium">
+                                        <?php if ($p['discount']): ?>
+                                            <span class="line-through text-gray-400 mr-1">$<?= number_format($p['price'], 2) ?></span>
+                                            <span class="text-primary-dark">$<?= number_format($p['price'] - $p['discount'], 2) ?></span>
+                                        <?php else: ?>
+                                            <span>$<?= number_format($p['price'], 2) ?></span>
+                                        <?php endif; ?>
+                                    </span>
+                                </div>
+                            </a>
+                            <!-- Add delete button outside the link but within the list item -->
+                            <div class="px-4 pb-2 text-right">
+                                <button type="button" 
+                                        class="text-xs text-red-600 hover:text-red-800" 
+                                        onclick="deleteProduct(<?= $p['id'] ?>, '<?= addslashes(htmlspecialchars($p['title'])) ?>')">
+                                    <i data-lucide="trash-2" class="h-3 w-3 inline-block mr-1"></i>
+                                    Delete
+                                </button>
+                            </div>
+                        </li>
+                    <?php endforeach; ?>
                         
                         <?php if (empty($products)): ?>
                             <li class="p-6 text-center text-gray-500">
@@ -263,5 +307,184 @@ while ($row = $productsResult->fetch_assoc()) {
         </div>
     </div>
 </div>
-
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // File upload handling
+    const fileUpload = document.getElementById('file_upload');
+    const imageUrl = document.getElementById('image_url');
+    const imagePreview = document.getElementById('image_preview');
+    const previewImage = document.getElementById('preview_image');
+    const removeImage = document.getElementById('remove_image');
+    const uploadProgress = document.getElementById('upload_progress');
+    const uploadProgressBar = document.getElementById('upload_progress_bar');
+    const uploadStatus = document.getElementById('upload_status');
+    const imageUrlPreview = document.getElementById('image_url_preview');
+    
+    // Initialize image preview if URL exists
+    if (imageUrl.value) {
+        previewImage.src = imageUrl.value;
+        imagePreview.classList.remove('hidden');
+        imageUrlPreview.classList.remove('hidden');
+    }
+    
+    // Handle file selection
+    fileUpload.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        // Validate file type
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        if (!validTypes.includes(file.type)) {
+            alert('Invalid file type. Please select an image file (JPG, PNG, GIF, WEBP).');
+            return;
+        }
+        
+        // Validate file size (max 2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            alert('File size too large. Maximum allowed size is 2MB.');
+            return;
+        }
+        
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewImage.src = e.target.result;
+            imagePreview.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+        
+        // Upload file
+        uploadFile(file);
+    });
+    
+    // Remove image preview
+    removeImage.addEventListener('click', function() {
+        fileUpload.value = '';
+        imageUrl.value = '';
+        imagePreview.classList.add('hidden');
+        imageUrlPreview.classList.add('hidden');
+    });
+    
+    // Handle URL input change
+    imageUrl.addEventListener('input', function() {
+        if (this.value) {
+            previewImage.src = this.value;
+            imagePreview.classList.remove('hidden');
+            imageUrlPreview.classList.remove('hidden');
+        } else {
+            imagePreview.classList.add('hidden');
+            imageUrlPreview.classList.add('hidden');
+        }
+    });
+    
+    // Upload file to server
+    function uploadFile(file) {
+        const formData = new FormData();
+        formData.append('product_image', file);
+        
+        // Show progress bar
+        uploadProgress.classList.remove('hidden');
+        uploadProgressBar.style.width = '0%';
+        uploadStatus.textContent = 'Uploading... 0%';
+        
+        const xhr = new XMLHttpRequest();
+        
+        // Progress handler
+        xhr.upload.addEventListener('progress', function(e) {
+            if (e.lengthComputable) {
+                const percentComplete = Math.round((e.loaded / e.total) * 100);
+                uploadProgressBar.style.width = percentComplete + '%';
+                uploadStatus.textContent = `Uploading... ${percentComplete}%`;
+            }
+        });
+        
+        // Load handler
+        xhr.addEventListener('load', function() {
+            if (xhr.status === 200) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.success) {
+                        imageUrl.value = response.file_path;
+                        uploadStatus.textContent = 'Upload complete!';
+                        imageUrlPreview.classList.remove('hidden');
+                        
+                        // Hide progress bar after a delay
+                        setTimeout(function() {
+                            uploadProgress.classList.add('hidden');
+                        }, 2000);
+                    } else {
+                        uploadStatus.textContent = 'Error: ' + response.message;
+                    }
+                } catch (e) {
+                    uploadStatus.textContent = 'Error parsing server response';
+                }
+            } else {
+                uploadStatus.textContent = 'Upload failed with status: ' + xhr.status;
+            }
+        });
+        
+        // Error handler
+        xhr.addEventListener('error', function() {
+            uploadStatus.textContent = 'Upload failed due to network error';
+        });
+        
+        // Open and send request
+        xhr.open('POST', '/flower-lab/ajax/upload_product_image.php', true);
+        xhr.send(formData);
+    }
+});
+</script>
+<script>
+// Delete product functionality
+function deleteProduct(productId, productTitle) {
+    // Confirm deletion
+    if (!confirm(`Are you sure you want to delete "${productTitle}"?`)) {
+        return; // User cancelled
+    }
+    
+    // Show loading state
+    const loadingIndicator = document.createElement('div');
+    loadingIndicator.className = 'fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50';
+    loadingIndicator.innerHTML = `
+        <div class="bg-white p-4 rounded-lg shadow-md">
+            <p class="text-gray-800">Deleting product...</p>
+        </div>
+    `;
+    document.body.appendChild(loadingIndicator);
+    
+    // Send delete request
+    fetch('/flower-lab/admin/ajax/delete_product.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            product_id: productId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Remove loading indicator
+        document.body.removeChild(loadingIndicator);
+        
+        if (data.success) {
+            // Show success message
+            alert('Product deleted successfully');
+            
+            // Reload the page to update the product list
+            window.location.reload();
+        } else {
+            // Show error message
+            alert('Error deleting product: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        // Remove loading indicator
+        document.body.removeChild(loadingIndicator);
+        
+        console.error('Error deleting product:', error);
+        alert('Failed to delete product. Please try again.');
+    });
+}
+</script>
 <?php include dirname(__DIR__) . '/includes/footer.php'; ?>

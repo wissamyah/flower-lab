@@ -768,5 +768,253 @@ include dirname(__DIR__) . '/includes/header.php';
         });
     }
 </script>
-
+<script>
+// Add image upload functionality for bulk editor
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Dropzone for bulk image uploads
+    const dropzoneArea = document.createElement('div');
+    dropzoneArea.id = 'bulk-image-dropzone';
+    dropzoneArea.className = 'hidden border-2 border-dashed border-gray-300 rounded-lg p-6 text-center mb-4';
+    dropzoneArea.innerHTML = `
+        <i data-lucide="upload-cloud" class="mx-auto h-12 w-12 text-gray-400 mb-3"></i>
+        <p class="text-sm font-medium text-gray-700 mb-1">Drag and drop product images here</p>
+        <p class="text-xs text-gray-500">or click to browse</p>
+        <div id="upload-previews" class="flex flex-wrap gap-2 mt-4"></div>
+        <input type="file" id="bulk-file-upload" class="hidden" accept=".jpg,.jpeg,.png,.gif,.webp" multiple>
+    `;
+    
+    // Add dropzone before the grid
+    const gridPanel = document.getElementById('grid-panel');
+    if (gridPanel) {
+        gridPanel.insertBefore(dropzoneArea, gridPanel.firstChild);
+        
+        // Add toggle button for dropzone
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'flex justify-end mb-4';
+        buttonContainer.innerHTML = `
+            <button type="button" id="toggle-image-upload" class="px-3 py-1.5 text-sm text-gray-600 bg-gray-100 rounded hover:bg-gray-200 flex items-center">
+                <i data-lucide="image" class="h-4 w-4 mr-1"></i>
+                Upload Images
+            </button>
+        `;
+        
+        gridPanel.insertBefore(buttonContainer, gridPanel.firstChild);
+        
+        // Initialize Lucide icons for the new elements
+        lucide.createIcons({
+            scope: dropzoneArea
+        });
+        
+        lucide.createIcons({
+            scope: buttonContainer
+        });
+        
+        // Toggle dropzone visibility
+        const toggleButton = document.getElementById('toggle-image-upload');
+        toggleButton.addEventListener('click', function() {
+            dropzoneArea.classList.toggle('hidden');
+            if (!dropzoneArea.classList.contains('hidden')) {
+                this.textContent = 'Hide Upload Area';
+                this.innerHTML = '<i data-lucide="x" class="h-4 w-4 mr-1"></i> Hide Upload Area';
+                lucide.createIcons({
+                    scope: this
+                });
+            } else {
+                this.textContent = 'Upload Images';
+                this.innerHTML = '<i data-lucide="image" class="h-4 w-4 mr-1"></i> Upload Images';
+                lucide.createIcons({
+                    scope: this
+                });
+            }
+        });
+        
+        // Set up dropzone event listeners
+        const dropzone = document.getElementById('bulk-image-dropzone');
+        const fileInput = document.getElementById('bulk-file-upload');
+        const previewsContainer = document.getElementById('upload-previews');
+        
+        // Trigger file selection when clicking on dropzone
+        dropzone.addEventListener('click', function(e) {
+            if (e.target.id !== 'bulk-file-upload') {
+                fileInput.click();
+            }
+        });
+        
+        // Handle drag and drop
+        dropzone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('border-primary');
+            this.classList.add('bg-primary-light');
+            this.classList.add('bg-opacity-10');
+        });
+        
+        dropzone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('border-primary');
+            this.classList.remove('bg-primary-light');
+            this.classList.remove('bg-opacity-10');
+        });
+        
+        dropzone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('border-primary');
+            this.classList.remove('bg-primary-light');
+            this.classList.remove('bg-opacity-10');
+            
+            if (e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                handleFiles(e.dataTransfer.files);
+            }
+        });
+        
+        // Handle file selection
+        fileInput.addEventListener('change', function() {
+            handleFiles(this.files);
+        });
+        
+        // Process selected files
+        function handleFiles(files) {
+            for (let i = 0; i < files.length; i++) {
+                uploadFile(files[i]);
+            }
+        }
+        
+        // Upload file to server
+        function uploadFile(file) {
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                showNotification('Invalid file type. Please select an image file (JPG, PNG, GIF, WEBP).', 'error');
+                return;
+            }
+            
+            // Validate file size (max a2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                showNotification('File size too large. Maximum allowed size is 2MB.', 'error');
+                return;
+            }
+            
+            // Create preview element
+            const previewContainer = document.createElement('div');
+            previewContainer.className = 'relative w-20 h-20 bg-gray-100 rounded overflow-hidden border border-gray-200';
+            
+            const previewImage = document.createElement('img');
+            previewImage.className = 'w-full h-full object-cover';
+            
+            const progressOverlay = document.createElement('div');
+            progressOverlay.className = 'absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center';
+            
+            const progressBar = document.createElement('div');
+            progressBar.className = 'w-16 h-1.5 bg-gray-500 rounded-full overflow-hidden';
+            
+            const progressIndicator = document.createElement('div');
+            progressIndicator.className = 'h-full bg-white';
+            progressIndicator.style.width = '0%';
+            
+            // Append elements
+            progressBar.appendChild(progressIndicator);
+            progressOverlay.appendChild(progressBar);
+            previewContainer.appendChild(previewImage);
+            previewContainer.appendChild(progressOverlay);
+            previewsContainer.appendChild(previewContainer);
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImage.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            
+            // Create form data for upload
+            const formData = new FormData();
+            formData.append('product_image', file);
+            
+            // Upload with progress tracking
+            const xhr = new XMLHttpRequest();
+            
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    progressIndicator.style.width = percent + '%';
+                }
+            });
+            
+            xhr.addEventListener('load', function() {
+                if (xhr.status === 200) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response.success) {
+                            // Successfully uploaded
+                            progressOverlay.remove();
+                            
+                            // Add a "copy URL" button
+                            const copyButton = document.createElement('button');
+                            copyButton.className = 'absolute bottom-1 right-1 p-1 bg-primary text-white rounded-full hover:bg-primary-dark text-xs';
+                            copyButton.innerHTML = '<i data-lucide="copy" class="h-3 w-3"></i>';
+                            copyButton.title = 'Copy image URL';
+                            copyButton.setAttribute('data-url', response.file_path);
+                            
+                            copyButton.addEventListener('click', function(e) {
+                                e.stopPropagation();
+                                const url = this.getAttribute('data-url');
+                                
+                                // Copy to clipboard
+                                navigator.clipboard.writeText(url).then(function() {
+                                    showNotification('Image URL copied to clipboard');
+                                }).catch(function() {
+                                    // Fallback if clipboard API fails
+                                    const tempInput = document.createElement('input');
+                                    tempInput.value = url;
+                                    document.body.appendChild(tempInput);
+                                    tempInput.select();
+                                    document.execCommand('copy');
+                                    document.body.removeChild(tempInput);
+                                    showNotification('Image URL copied to clipboard');
+                                });
+                            });
+                            
+                            previewContainer.appendChild(copyButton);
+                            lucide.createIcons({
+                                scope: copyButton
+                            });
+                            
+                            showNotification('Image uploaded successfully');
+                        } else {
+                            // Upload failed
+                            progressOverlay.innerHTML = '<span class="text-white text-xs p-1">Failed</span>';
+                            showNotification('Upload failed: ' + response.message, 'error');
+                        }
+                    } catch (e) {
+                        progressOverlay.innerHTML = '<span class="text-white text-xs p-1">Error</span>';
+                        showNotification('Error processing upload response', 'error');
+                    }
+                } else {
+                    progressOverlay.innerHTML = '<span class="text-white text-xs p-1">Failed</span>';
+                    showNotification('Upload failed with status: ' + xhr.status, 'error');
+                }
+            });
+            
+            xhr.addEventListener('error', function() {
+                progressOverlay.innerHTML = '<span class="text-white text-xs p-1">Error</span>';
+                showNotification('Network error during upload', 'error');
+            });
+            
+            xhr.open('POST', '/flower-lab/ajax/upload_product_image.php', true);
+            xhr.send(formData);
+        }
+        
+        // Helper notification function
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `fixed bottom-4 right-4 px-4 py-2 rounded shadow-lg z-50 ${type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(function() {
+                notification.remove();
+            }, 3000);
+        }
+    }
+});
+</script>
 <?php include dirname(__DIR__) . '/includes/footer.php'; ?>

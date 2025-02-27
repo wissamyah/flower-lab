@@ -92,9 +92,13 @@ function requireLogin() {
 function isAdmin() {
     // Check if user has admin flag set
     $user = getCurrentUser();
-    return $user && isset($user['is_admin']) && $user['is_admin'] == 1;
+    
+    // Debug line - you can remove this after confirming it works
+    error_log('Admin check for user: ' . ($user ? json_encode($user) : 'Not logged in'));
+    
+    // Explicit check for the admin flag set to 1 (as integer or string)
+    return $user && isset($user['is_admin']) && ($user['is_admin'] == 1 || $user['is_admin'] === '1');
 }
-
 // Require user to be admin, redirect if not
 function requireAdmin() {
     requireLogin();

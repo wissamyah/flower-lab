@@ -30,12 +30,12 @@
 }
 
 .firebaseui-id-submit {
-    background-color: #FF90BC !important;
+    background-color: #821633 !important;
     color: white !important;
 }
 
 .firebaseui-id-submit:hover {
-    background-color: #FF5A8C !important;
+    background-color: #375645 !important;
 }
 
 
@@ -66,12 +66,12 @@
 
 .firebaseui-idp-email,
 .firebaseui-idp-password {
-    background-color: #FF90BC !important;
+    background-color: #821633 !important;
 }
 
 .firebaseui-idp-email:hover,
 .firebaseui-idp-password:hover {
-    background-color: #FF5A8C !important;
+    background-color: #375645 !important;
 }
 
 
@@ -87,6 +87,6 @@
 }
 
 .firebaseui-input:focus {
-    border-color: #FF90BC !important;
-    box-shadow: 0 0 0 2px rgba(255, 144, 188, 0.2) !important;
+    border-color: #821633 !important;
+    box-shadow: 0 0 0 2px rgba(130, 22, 51, 0.2) !important;
 }

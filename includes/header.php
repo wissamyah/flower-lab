@@ -18,14 +18,9 @@ require_once dirname(__DIR__) . '/includes/auth.php';
                 extend: {
                     colors: {
                         primary: {
-                            light: '#FFD6EC',
-                            DEFAULT: '#FF90BC',
-                            dark: '#FF5A8C'
-                        },
-                        secondary: {
-                            light: '#E0F7FA',
-                            DEFAULT: '#80DEEA',
-                            dark: '#4DD0E1'
+                            light: '#7a9687',  // Sage green
+                            DEFAULT: '#821633', // Deep burgundy
+                            dark: '#375645'     // Forest green
                         }
                     }
                 }
@@ -115,6 +110,12 @@ require_once dirname(__DIR__) . '/includes/auth.php';
                                 Sign In
                             </a>
                         <?php endif; ?>
+                        <?php if (isAdmin()): ?>
+                            <a href="/flower-lab/admin/" class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-primary-dark hover:bg-gray-50 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block mr-1"><path d="M12 4V20"></path><path d="M5 13l7-7 7 7"></path><path d="M5 19h14"></path></svg>
+                                Admin Dashboard
+                            </a>
+                        <?php endif; ?>
                     </div>
                 </div>
                 
@@ -162,6 +163,12 @@ require_once dirname(__DIR__) . '/includes/auth.php';
                                         <i data-lucide="user" class="inline-block h-4 w-4 mr-2 align-text-bottom"></i>
                                         Your Profile
                                     </a>
+                                    <?php if (isAdmin()): ?>
+                                        <a href="/flower-lab/admin/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            <i data-lucide="settings" class="inline-block h-4 w-4 mr-2 align-text-bottom"></i>
+                                            Admin Dashboard
+                                        </a>
+                                    <?php endif; ?>
                                     <a href="/flower-lab/wishlist.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                         <i data-lucide="heart" class="inline-block h-4 w-4 mr-2 align-text-bottom"></i>
                                         Your Wishlist
@@ -185,8 +192,8 @@ require_once dirname(__DIR__) . '/includes/auth.php';
                                     <div class="p-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
                                         <h3 class="font-medium text-gray-800">Notifications</h3>
                                         <div class="flex items-center">
-                                            <span id="auto-read-timer" class="text-xs text-gray-500 mr-2 hidden">Auto-reading in 5s...</span>
-                                            <a href="#" id="mark-all-read" class="text-xs text-primary-dark hover:underline">Mark all as read</a>
+                                            <span id="auto-read-timer" class="text-xs text-gray-500 mr-2 hidden"></span>
+                                            <a href="#" id="mark-all-read" class="text-xs text-primary-dark hover:underline">Clear all</a>
                                             <button type="button" id="close-notifications" class="ml-2 text-gray-400 hover:text-gray-500 p-1 rounded hover:bg-gray-100">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                                             </button>
@@ -226,6 +233,12 @@ require_once dirname(__DIR__) . '/includes/auth.php';
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block mr-2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
                             Wishlist
                         </a>
+                        <?php if (isAdmin()): ?>
+                            <a href="/flower-lab/admin/" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary-dark hover:bg-gray-50 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block mr-2"><path d="M12 4V20"></path><path d="M5 13l7-7 7 7"></path><path d="M5 19h14"></path></svg>
+                                Admin Dashboard
+                            </a>
+                        <?php endif; ?>
                         <a href="/flower-lab/profile.php" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary-dark hover:bg-gray-50 flex items-center">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block mr-2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                             Profile

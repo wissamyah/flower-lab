@@ -1,0 +1,138 @@
+/* Custom styles for The Flower Lab */
+
+
+/* Fade in animation */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+
+/* Custom focus styles for form elements */
+
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: #FF90BC;
+    box-shadow: 0 0 0 2px rgba(255, 144, 188, 0.2);
+}
+
+
+/* Custom button hover effects */
+
+.hover-scale {
+    transition: transform 0.2s ease-in-out;
+}
+
+.hover-scale:hover {
+    transform: scale(1.03);
+}
+
+
+/* Card hover effects */
+
+.card-hover {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+
+/* Notification animation */
+
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.notification {
+    animation: slideIn 0.3s ease-out forwards;
+}
+
+
+/* Prevent scrollbar jump */
+
+html {
+    overflow-y: scroll;
+}
+
+
+/* Responsive padding adjustments */
+
+@media (max-width: 640px) {
+    .mobile-padding {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+
+/* Custom scrollbar */
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f7f7f7;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #FF90BC;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #FF5A8C;
+}
+
+
+/* Add this to your CSS file */
+
+#profile-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+}
+
+
+/* Fix for notification dropdown position */
+
+#notification-dropdown {
+    position: absolute;
+    right: 0;
+    margin-top: 8px;
+    z-index: 50;
+}
+
+
+/* Ensure hover works correctly */
+
+#profile-icon:hover {
+    background-color: rgba(243, 244, 246, 1);
+    /* bg-gray-100 */
+    color: rgba(219, 39, 119, 1);
+    /* text-primary-dark */
+}

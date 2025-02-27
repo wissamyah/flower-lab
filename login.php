@@ -1,4 +1,5 @@
 <?php
+// /flower-lab/login.php
 require_once 'includes/db.php';
 require_once 'includes/auth.php';
 
@@ -27,6 +28,10 @@ include 'includes/header.php';
         
         <div class="p-6">
             <div id="firebaseui-auth-container"></div>
+            <div id="loader" class="text-center py-4">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+                <p class="mt-2 text-sm text-gray-500">Loading authentication options...</p>
+            </div>
             
             <div class="mt-6 text-sm text-center text-gray-500">
                 <p>Don't have an account? Sign up using the options above.</p>
@@ -48,29 +53,60 @@ include 'includes/header.php';
         var uiConfig = {
             callbacks: {
                 signInSuccessWithAuthResult: function(authResult, redirectUrl) {
-                    // User successfully signed in.
-                    // Return type determines whether we continue the redirect automatically
-                    // or whether we leave that to developer to handle.
+                    // User successfully signed in
+                    var user = authResult.user;
+                    
+                    // Manually trigger our sync function
+                    if (typeof syncUserWithDatabase === 'function') {
+                        syncUserWithDatabase(user);
+                    } else {
+                        // Fallback if the function isn't loaded
+                        console.log("User authenticated, redirecting to home...");
+                        window.location.href = '/flower-lab/';
+                    }
+                    
+                    // Return false to prevent automatic redirect
                     return false;
                 },
                 uiShown: function() {
-                    // The widget is rendered.
-                    // Hide the loader.
+                    // The widget is rendered
                     document.getElementById('loader').style.display = 'none';
                 }
             },
-            // Will use popup for IDP Providers sign-in flow instead of the default, redirect.
+            // Use popup for IDP Providers sign-in flow
             signInFlow: 'popup',
-            signInSuccessUrl: '/flower-lab/',
+            
+            // Allow both new user creation & existing user sign-in
             signInOptions: [
-                // Leave the lines as is for the providers you want to offer your users.
-                firebase.auth.GoogleAuthProvider.PROVIDER_ID,
-                firebase.auth.EmailAuthProvider.PROVIDER_ID,
+                {
+                    provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
+                    requireDisplayName: true,
+                    
+                    // CRITICAL FIX: Allow account creation + signin
+                    signInMethod: firebase.auth.EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD,
+                    
+                    // Enable password reset
+                    forgotPasswordLink: '/flower-lab/reset_password.php',
+                    
+                    // CRITICAL: Allow user creation
+                    disableSignUp: {
+                        status: false
+                    }
+                },
+                firebase.auth.GoogleAuthProvider.PROVIDER_ID
             ],
-            // Terms of service url.
+            
+            // Disable credential helper
+            credentialHelper: firebaseui.auth.CredentialHelper.NONE,
+            
+            // Terms of service url
             tosUrl: '#',
-            // Privacy policy url.
-            privacyPolicyUrl: '#'
+            
+            // Privacy policy url
+            privacyPolicyUrl: '#',
+            
+            // Auto upgrade anonymous users - important!
+            autoUpgradeAnonymousUsers: true
         };
         
         // The start method will wait until the DOM is loaded.

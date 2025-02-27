@@ -8,87 +8,322 @@ document.addEventListener("DOMContentLoaded", function() {
 
             // Store user info in session via AJAX
             syncUserWithDatabase(user);
+
+            // Update UI elements for authenticated user
+            updateUIForAuthenticatedUser(user);
         } else {
             // User is signed out
             console.log("User is signed out");
+
+            // Update UI elements for non-authenticated user
+            updateUIForNonAuthenticatedUser();
         }
     });
 });
 
-// Sync Firebase user with database
-// Sync Firebase user with database
-function syncUserWithDatabase(user) {
-    // Get the ID token
-    user.getIdToken().then(function(idToken) {
-        // Get phone number if available
-        const phoneNumber = user.phoneNumber || "";
+// User dropdown toggle
+document.addEventListener('DOMContentLoaded', function() {
+    const profileIcon = document.getElementById('profile-icon');
+    const userDropdown = document.getElementById('user-dropdown');
 
-        // Send to the NEW endpoint
-        fetch("/flower-lab/ajax/firebase_sync.php", {
+    if (profileIcon && userDropdown) {
+        profileIcon.addEventListener('click', function(e) {
+            // Only handle click for logged-in users
+            if (firebase.auth().currentUser) {
+                e.preventDefault();
+                userDropdown.classList.toggle('hidden');
+            }
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (profileIcon && userDropdown && !profileIcon.contains(e.target) && !userDropdown.contains(e.target)) {
+                userDropdown.classList.add('hidden');
+            }
+        });
+    }
+
+    // Sign out function - Update this in your existing scripts.js file
+    window.signOut = function() {
+        // Show loading indicator if you have one
+        if (typeof showNotification === 'function') {
+            showNotification('Signing out...');
+        }
+
+        // First clear the server-side session
+        fetch("/flower-lab/logout.php")
+            .then(() => {
+                // Then sign out from Firebase
+                return firebase.auth().signOut();
+            })
+            .then(function() {
+                // Sign-out successful, redirect to index page
+                window.location.href = "/flower-lab/index.php";
+            })
+            .catch(function(error) {
+                console.error("Sign out error:", error);
+
+                // Still try to redirect to index page
+                window.location.href = "/flower-lab/index.php";
+            });
+    };
+});
+
+// Function to update UI for authenticated user
+function updateUIForAuthenticatedUser(user) {
+    // Update profile icon/link if it exists
+    const profileIcon = document.getElementById('profile-icon');
+    if (profileIcon) {
+        profileIcon.setAttribute('aria-label', 'Your Profile');
+
+        // Add user initial to the profile icon if available
+        if (user.displayName) {
+            const userInitial = document.createElement('span');
+            userInitial.className = 'w-full h-full flex items-center justify-center text-sm font-medium text-white bg-primary rounded-full';
+            userInitial.textContent = user.displayName.charAt(0).toUpperCase();
+
+            // Clear existing content and add initial
+            profileIcon.innerHTML = '';
+            profileIcon.appendChild(userInitial);
+        }
+    }
+
+    // Update login/signup buttons if they exist
+    const loginButtons = document.querySelectorAll('.login-button, .signup-button');
+    loginButtons.forEach(button => {
+        button.style.display = 'none';
+    });
+
+    // Show user-only elements
+    const userOnlyElements = document.querySelectorAll('.user-only');
+    userOnlyElements.forEach(element => {
+        element.style.display = '';
+    });
+}
+
+
+// Function to update UI for non-authenticated user
+function updateUIForNonAuthenticatedUser() {
+    // Update profile icon if it exists
+    const profileIcon = document.getElementById('profile-icon');
+    if (profileIcon) {
+        profileIcon.setAttribute('aria-label', 'Login');
+        profileIcon.innerHTML = '<i data-lucide="user" class="h-5 w-5"></i>';
+    }
+
+    // Update login/signup buttons if they exist
+    const loginButtons = document.querySelectorAll('.login-button, .signup-button');
+    loginButtons.forEach(button => {
+        button.style.display = '';
+    });
+
+    // Hide user-only elements
+    const userOnlyElements = document.querySelectorAll('.user-only');
+    userOnlyElements.forEach(element => {
+        element.style.display = 'none';
+    });
+}
+
+// Direct Firebase auth management
+function handleDirectLogin(email, password) {
+    // Show loading state if you have notification system
+    if (typeof showModernNotification === 'function') {
+        showModernNotification({
+            type: 'info',
+            title: 'Signing in...',
+            message: 'Please wait while we authenticate your account',
+            duration: 10000
+        });
+    }
+
+    // Sign in with Firebase directly
+    firebase.auth().signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+            // Signed in 
+            var user = userCredential.user;
+
+            // Sync with database
+            syncUserWithDatabase(user);
+
+            // Success notification
+            if (typeof showModernNotification === 'function') {
+                showModernNotification({
+                    type: 'success',
+                    title: 'Welcome back!',
+                    message: 'You have been successfully logged in',
+                    duration: 3000
+                });
+            }
+        })
+        .catch((error) => {
+            console.error("Login error:", error);
+
+            // Error notification
+            if (typeof showModernNotification === 'function') {
+                let errorMessage = 'Failed to sign in. Please check your credentials.';
+
+                // More specific error messages
+                if (error.code === 'auth/wrong-password') {
+                    errorMessage = 'Incorrect password. Please try again or reset your password.';
+                } else if (error.code === 'auth/user-not-found') {
+                    errorMessage = 'No account found with this email.';
+                }
+
+                showModernNotification({
+                    type: 'error',
+                    title: 'Sign In Failed',
+                    message: errorMessage,
+                    duration: 5000
+                });
+            }
+        });
+}
+
+// Direct password reset function
+function resetPassword(email) {
+    return firebase.auth().sendPasswordResetEmail(email);
+}
+
+// Create a new user account directly with email/password
+function createUserAccount(email, password, displayName) {
+    return firebase.auth().createUserWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+            // Update the profile with display name
+            const user = userCredential.user;
+            return user.updateProfile({
+                displayName: displayName
+            }).then(() => {
+                // Return the updated user
+                return userCredential;
+            });
+        });
+}
+
+// Enhanced sync function with better error handling
+function syncUserWithDatabase(user) {
+    if (!user) {
+        console.error('No user provided to syncUserWithDatabase');
+        return Promise.reject('No user provided');
+    }
+
+    // Get the ID token
+    return user.getIdToken()
+        .then(function(idToken) {
+            console.log('Got ID token for user:', user.email);
+
+            // Send to the server
+            return fetch("/flower-lab/ajax/firebase_sync.php", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
                     idToken: idToken,
+                    uid: user.uid,
                     email: user.email,
-                    phoneNumber: phoneNumber,
+                    phoneNumber: user.phoneNumber || "",
                     displayName: user.displayName || "",
                 }),
-            })
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then((data) => {
-                console.log("User synced with database:", data);
-                // Redirect if needed
-                if (data.redirect) {
-                    window.location.href = data.redirect;
-                }
-            })
-            .catch((error) => {
-                console.error("Error syncing user:", error);
-                // Add fallback - try again after a short delay
-                setTimeout(() => {
-                    console.log("Retrying user sync...");
-
-                    // Try a simpler version with minimal data
-                    fetch("/flower-lab/ajax/firebase_sync.php", {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify({
-                                email: user.email
-                            }),
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            console.log("User sync retry result:", data);
-                        })
-                        .catch(error => {
-                            console.error("Error in retry sync:", error);
-                        });
-                }, 1000);
             });
-    });
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok: ' + response.status);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("User synced with database:", data);
+
+            // Store essential user info in localStorage
+            localStorage.setItem('flowerLabUser', JSON.stringify({
+                uid: user.uid,
+                email: user.email,
+                displayName: user.displayName || '',
+                lastLogin: new Date().toISOString()
+            }));
+
+            // Redirect if needed
+            if (data.redirect) {
+                window.location.href = data.redirect;
+            } else {
+                // Default to home page
+                window.location.href = '/flower-lab/';
+            }
+
+            return data;
+        })
+        .catch(error => {
+            console.error("Error syncing user:", error);
+
+            // Try a fallback with minimal data
+            return fetch("/flower-lab/ajax/firebase_sync.php", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        uid: user.uid,
+                        email: user.email
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Fallback sync result:", data);
+
+                    // Still redirect to home or specified location
+                    if (data.redirect) {
+                        window.location.href = data.redirect;
+                    } else {
+                        window.location.href = '/flower-lab/';
+                    }
+
+                    return data;
+                })
+                .catch(finalError => {
+                    console.error("Fallback sync also failed:", finalError);
+
+                    // Last resort: just go to home page
+                    setTimeout(() => {
+                        window.location.href = '/flower-lab/';
+                    }, 1000);
+
+                    throw finalError;
+                });
+        });
 }
 
-// Sign out user
+// Sign out user - Updated function
 function signOut() {
-    firebase
-        .auth()
-        .signOut()
+    // Show loading notification
+    if (typeof showModernNotification === 'function') {
+        const notification = showModernNotification({
+            type: 'info',
+            title: 'Signing out...',
+            message: 'Please wait while we sign you out.',
+            duration: 10000 // Long duration in case logout takes time
+        });
+    }
+
+    // Clear user data from localStorage
+    localStorage.removeItem('flowerLabUser');
+    sessionStorage.removeItem('welcomeShown');
+
+    // First clear the server-side session
+    fetch("/flower-lab/logout.php")
+        .then(response => {
+            // Then sign out from Firebase
+            return firebase.auth().signOut();
+        })
         .then(function() {
-            // Sign-out successful
+            // Sign-out successful, redirect to index page
             window.location.href = "/flower-lab/index.php";
         })
         .catch(function(error) {
-            // An error happened
             console.error("Sign out error:", error);
+
+            // Still try to redirect to index page
+            window.location.href = "/flower-lab/index.php";
         });
 }
 

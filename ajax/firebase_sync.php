@@ -1,4 +1,6 @@
 <?php
+// /flower-lab/ajax/firebase_sync.php
+
 // Completely disable error output
 error_reporting(0);
 ini_set('display_errors', 0);
@@ -13,6 +15,9 @@ try {
     // Get input data
     $input = json_decode(file_get_contents('php://input'), true);
     
+    // Log received data for debugging
+    error_log('Firebase sync received: ' . json_encode($input));
+    
     if (!$input || !isset($input['email'])) {
         throw new Exception('Invalid request data');
     }
@@ -22,28 +27,21 @@ try {
         session_start();
     }
     
-    // Generate a dummy firebase UID
-    $firebase_uid = 'firebase_' . uniqid();
+    // Get Firebase UID from input or generate one if not available
+    $firebase_uid = $input['uid'] ?? ('firebase_' . uniqid());
     
     // Store in session
     $_SESSION['firebase_uid'] = $firebase_uid;
+    $_SESSION['user_email'] = $input['email'];
     
     // Extract data
     $email = $input['email'];
     $phone = $input['phoneNumber'] ?? '';
     $name = $input['displayName'] ?? '';
     
-    // Connect to database
-    $dbHost = 'localhost';
-    $dbUser = 'root';
-    $dbPass = '';
-    $dbName = 'flower-lab';
-    
-    $db = new mysqli($dbHost, $dbUser, $dbPass, $dbName);
-    
-    if ($db->connect_error) {
-        throw new Exception('Database connection failed: ' . $db->connect_error);
-    }
+    // Include database connection
+    require_once dirname(__DIR__) . '/includes/db.php';
+    $db = getDB();
     
     // Check if user exists
     $stmt = $db->prepare("SELECT id FROM users WHERE email = ?");
@@ -56,16 +54,50 @@ try {
         $user = $result->fetch_assoc();
         $userId = $user['id'];
         
-        // Only update firebase_uid and keep other fields as is
-        $stmt = $db->prepare("UPDATE users SET firebase_uid = ? WHERE id = ?");
-        $stmt->bind_param("si", $firebase_uid, $userId);
+        // Update the firebase UID and other fields if provided
+        $updateFields = array();
+        $updateParams = array();
+        $updateTypes = "";
+        
+        // Always update firebase_uid and timestamp
+        $updateFields[] = "firebase_uid = ?";
+        $updateParams[] = $firebase_uid;
+        $updateTypes .= "s";
+        
+        $updateFields[] = "updated_at = NOW()";
+        
+        // Update name if provided and not empty
+        if (!empty($name)) {
+            $updateFields[] = "name = ?";
+            $updateParams[] = $name;
+            $updateTypes .= "s";
+        }
+        
+        // Update phone if provided and not empty
+        if (!empty($phone)) {
+            $updateFields[] = "phone_number = ?";
+            $updateParams[] = $phone;
+            $updateTypes .= "s";
+        }
+        
+        // Build the SQL query
+        $query = "UPDATE users SET " . implode(", ", $updateFields) . " WHERE id = ?";
+        $updateParams[] = $userId;
+        $updateTypes .= "i";
+        
+        $stmt = $db->prepare($query);
+        $stmt->bind_param($updateTypes, ...$updateParams);
         $stmt->execute();
+        
+        error_log("Updated existing user: $email with firebase_uid: $firebase_uid");
     } else {
         // Create new user
-        $stmt = $db->prepare("INSERT INTO users (firebase_uid, email, phone_number, name) VALUES (?, ?, ?, ?)");
+        $stmt = $db->prepare("INSERT INTO users (firebase_uid, email, phone_number, name, created_at, updated_at) VALUES (?, ?, ?, ?, NOW(), NOW())");
         $stmt->bind_param("ssss", $firebase_uid, $email, $phone, $name);
         $stmt->execute();
         $userId = $db->insert_id;
+        
+        error_log("Created new user: $email with firebase_uid: $firebase_uid, ID: $userId");
     }
     
     // Check for redirect
@@ -73,6 +105,9 @@ try {
     if (isset($_SESSION['redirect_after_login'])) {
         $redirect = $_SESSION['redirect_after_login'];
         unset($_SESSION['redirect_after_login']);
+    } else {
+        // Default redirect to home page
+        $redirect = '/flower-lab/';
     }
     
     // Return success response

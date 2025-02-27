@@ -1,4 +1,6 @@
 <?php
+// ajax/sync_user.php
+
 // Turn off all error reporting for AJAX requests
 error_reporting(0);
 ini_set('display_errors', 0);
@@ -17,7 +19,7 @@ try {
     $jsonInput = file_get_contents('php://input');
     $input = json_decode($jsonInput, true);
 
-    if (!$input || !isset($input['idToken']) || !isset($input['email'])) {
+    if (!$input || !isset($input['email'])) {
         echo json_encode([
             'success' => false,
             'message' => 'Invalid request data'
@@ -26,9 +28,8 @@ try {
         exit;
     }
 
-    // In a real application, you would verify the Firebase ID token
-    // Here we're simplifying and just accepting the data
-    $firebase_uid = uniqid('firebase_'); // Simulate Firebase UID for testing
+    // Use Firebase UID from the input (important fix)
+    $firebase_uid = $input['uid'] ?? ('firebase_' . uniqid());
     $email = $input['email'];
     $phone_number = $input['phoneNumber'] ?? '';
     $name = $input['displayName'] ?? '';
@@ -51,12 +52,33 @@ try {
         $user = $result->fetch_assoc();
         $userId = $user['id'];
         
-        $stmt = $db->prepare("UPDATE users SET firebase_uid = ?, phone_number = ?, name = ? WHERE id = ?");
-        $stmt->bind_param("sssi", $firebase_uid, $phone_number, $name, $userId);
+        // Build update query dynamically
+        $query = "UPDATE users SET firebase_uid = ?, updated_at = NOW()";
+        $params = array($firebase_uid);
+        $types = "s";
+        
+        if (!empty($name)) {
+            $query .= ", name = ?";
+            $params[] = $name;
+            $types .= "s";
+        }
+        
+        if (!empty($phone_number)) {
+            $query .= ", phone_number = ?";
+            $params[] = $phone_number;
+            $types .= "s";
+        }
+        
+        $query .= " WHERE id = ?";
+        $params[] = $userId;
+        $types .= "i";
+        
+        $stmt = $db->prepare($query);
+        $stmt->bind_param($types, ...$params);
         $stmt->execute();
     } else {
         // Create new user
-        $stmt = $db->prepare("INSERT INTO users (firebase_uid, email, phone_number, name) VALUES (?, ?, ?, ?)");
+        $stmt = $db->prepare("INSERT INTO users (firebase_uid, email, phone_number, name, created_at, updated_at) VALUES (?, ?, ?, ?, NOW(), NOW())");
         $stmt->bind_param("ssss", $firebase_uid, $email, $phone_number, $name);
         $stmt->execute();
         $userId = $db->insert_id;
@@ -82,6 +104,9 @@ try {
         'success' => false,
         'message' => 'Error: ' . $e->getMessage()
     ]);
+    
+    // Log the error
+    error_log('User sync error: ' . $e->getMessage());
 }
 
 // Clean and end the output buffer to ensure only JSON is sent

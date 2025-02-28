@@ -33,6 +33,12 @@ include 'includes/header.php';
                 </div>
                 
                 <div>
+                    <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                    <input type="tel" id="phone" class="w-full p-2 border border-gray-300 rounded focus:border-primary focus:ring-1 focus:ring-primary" required>
+                    <p class="text-xs text-gray-500 mt-1">Required for delivery notifications</p>
+                </div>
+                
+                <div>
                     <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
                     <input type="password" id="password" class="w-full p-2 border border-gray-300 rounded focus:border-primary focus:ring-1 focus:ring-primary" required minlength="6">
                     <p class="text-xs text-gray-500 mt-1">Password must be at least 6 characters long</p>
@@ -119,14 +125,28 @@ include 'includes/header.php';
             
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
             const pwd = password.value;
             const confirmPwd = confirmPassword.value;
+            
+            // Validate phone number
+            if (!phone.trim()) {
+                registerError.textContent = 'Phone number is required';
+                registerError.classList.remove('hidden');
+                return;
+            }
             
             // Validate passwords match
             if (pwd !== confirmPwd) {
                 passwordMatchError.classList.remove('hidden');
                 return;
             }
+            
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<span class="inline-block animate-spin mr-2">↻</span> Creating Account...';
+            submitBtn.disabled = true;
             
             // Create user account
             firebase.auth().createUserWithEmailAndPassword(email, pwd)
@@ -142,16 +162,23 @@ include 'includes/header.php';
                     // Account created successfully
                     console.log('Account created for:', email);
                     
-                    // Sync with database
-                    if (typeof syncUserWithDatabase === 'function') {
-                        syncUserWithDatabase(user);
-                    } else {
-                        // Fallback
-                        window.location.href = '/flower-lab/';
-                    }
+                    // Sync with database including phone number
+                    syncUserWithDatabase({
+                        uid: user.uid,
+                        email: user.email,
+                        displayName: name,
+                        phoneNumber: phone
+                    });
+                    
+                    // Redirect to home page
+                    window.location.href = '/flower-lab/';
                 })
                 .catch((error) => {
                     console.error('Registration error:', error);
+                    
+                    // Reset button
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
                     
                     // Show appropriate error message
                     let errorMessage = 'Failed to create account. Please try again.';
@@ -169,10 +196,17 @@ include 'includes/header.php';
                 });
         });
         
-        // Google sign-up
+        // Google sign-up with proper redirect
         const googleSignUpButton = document.getElementById('google-signup');
         
         googleSignUpButton.addEventListener('click', function() {
+            // Show loading state
+            const loadingElement = document.createElement('div');
+            loadingElement.id = 'loading-indicator';
+            loadingElement.className = 'fixed inset-0 bg-black bg-opacity-25 flex items-center justify-center z-50';
+            loadingElement.innerHTML = '<div class="bg-white p-4 rounded-lg shadow-lg"><p class="text-gray-800">Signing in with Google...</p></div>';
+            document.body.appendChild(loadingElement);
+            
             const provider = new firebase.auth.GoogleAuthProvider();
             
             firebase.auth().signInWithPopup(provider)
@@ -180,16 +214,29 @@ include 'includes/header.php';
                     // Google sign-in successful
                     const user = result.user;
                     
-                    // Sync with database
-                    if (typeof syncUserWithDatabase === 'function') {
-                        syncUserWithDatabase(user);
-                    } else {
-                        // Fallback
-                        window.location.href = '/flower-lab/';
-                    }
+                    // Update loading message
+                    loadingElement.innerHTML = '<div class="bg-white p-4 rounded-lg shadow-lg"><p class="text-gray-800">Login successful! Redirecting...</p></div>';
+                    
+                    // Sync with database and pass override to skip redirect check
+                    syncUserWithDatabase({
+                        uid: user.uid,
+                        email: user.email,
+                        displayName: user.displayName,
+                        phoneNumber: user.phoneNumber || ''
+                    });
+                    
+                    // Explicit redirect to home page
+                    setTimeout(() => {
+                        window.location.href = '/flower-lab/'; 
+                    }, 500);
                 })
                 .catch((error) => {
                     console.error('Google sign-up error:', error);
+                    
+                    // Remove loading indicator
+                    if (loadingElement) {
+                        document.body.removeChild(loadingElement);
+                    }
                     
                     // Show error
                     registerError.textContent = 'Google sign-up failed. Please try again.';
@@ -197,6 +244,35 @@ include 'includes/header.php';
                 });
         });
     });
+    
+    // Custom sync function to handle phone number
+    function syncUserWithDatabase(userData) {
+        fetch("/flower-lab/ajax/firebase_sync.php", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                uid: userData.uid,
+                email: userData.email,
+                displayName: userData.displayName || "",
+                phoneNumber: userData.phoneNumber || "",
+                skipRedirect: false  // Always redirect to home page
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("User synced with database:", data);
+            
+            // Explicit redirect to home page
+            window.location.href = '/flower-lab/';
+        })
+        .catch(error => {
+            console.error("Error syncing user:", error);
+            // Still redirect to home page on error
+            window.location.href = '/flower-lab/';
+        });
+    }
 </script>
 
 <?php include 'includes/footer.php'; ?>

@@ -31,6 +31,32 @@ if ($userId) {
         $totalPrice += $itemPrice * $item['quantity'];
     }
 }
+
+// Get delivery settings
+$deliveryRate = 0;
+$freeDeliveryThreshold = 0;
+
+$settingsQuery = "SELECT * FROM settings WHERE setting_key IN ('delivery_rate', 'free_delivery_threshold')";
+$settingsResult = $db->query($settingsQuery);
+
+if ($settingsResult && $settingsResult->num_rows > 0) {
+    while ($setting = $settingsResult->fetch_assoc()) {
+        if ($setting['setting_key'] === 'delivery_rate') {
+            $deliveryRate = floatval($setting['setting_value']);
+        } elseif ($setting['setting_key'] === 'free_delivery_threshold') {
+            $freeDeliveryThreshold = floatval($setting['setting_value']);
+        }
+    }
+}
+
+// Calculate if this order qualifies for free delivery
+$freeDelivery = ($freeDeliveryThreshold > 0 && $totalPrice >= $freeDeliveryThreshold) || $deliveryRate <= 0;
+
+// Calculate the final total with delivery
+$finalTotal = $totalPrice;
+if (!$freeDelivery) {
+    $finalTotal += $deliveryRate;
+}
 ?>
 
 <div class="max-w-6xl mx-auto px-4 py-8">
@@ -133,12 +159,24 @@ if ($userId) {
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-gray-600">Delivery</span>
-                                <span class="font-medium">Free</span>
+                                <?php if ($freeDelivery): ?>
+                                    <span class="font-medium text-green-600">Free</span>
+                                <?php else: ?>
+                                    <span class="font-medium">$<?= number_format($deliveryRate, 2) ?></span>
+                                <?php endif; ?>
                             </div>
+                            <?php if ($freeDeliveryThreshold > 0 && !$freeDelivery): ?>
+                            <div class="flex justify-between" style="font-size: 8pt;">
+                                <span class="text-green-600">Free delivery on orders over $<?= number_format($freeDeliveryThreshold, 2) ?></span>
+                                <span class="text-green-600">
+                                    $<?= number_format($freeDeliveryThreshold - $totalPrice, 2) ?> away
+                                </span>
+                            </div>
+                            <?php endif; ?>
                             <div class="border-t border-gray-100 pt-2 mt-2">
                                 <div class="flex justify-between">
                                     <span class="font-medium text-gray-800">Total</span>
-                                    <span class="font-bold text-primary-dark">$<?= number_format($totalPrice, 2) ?></span>
+                                    <span class="font-bold text-primary-dark">$<?= number_format($finalTotal, 2) ?></span>
                                 </div>
                             </div>
                         </div>
@@ -266,7 +304,7 @@ function updateBasketQuantity(itemId, quantity) {
 function showNotification(message, type = 'success') {
     // Create notification element
     const notification = document.createElement('div');
-    notification.className = `fixed bottom-4 right-4 px-4 py-2 rounded-md shadow-md ${
+    notification.className = `fixed bottom-4 right-4 px-4 py-2 rounded-md shadow-md z-50 ${
         type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
     }`;
     notification.textContent = message;

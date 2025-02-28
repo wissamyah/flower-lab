@@ -399,60 +399,75 @@ if ($userId) {
     
     // Contact about order via WhatsApp
     function contactAboutOrder(orderNumber) {
-        // Generate WhatsApp link
-        fetch(`/flower-lab/ajax/order.php?action=details&orderNumber=${orderNumber}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const order = data.order;
-                    
-                    // Build message
-                    let message = `*New Order #${order.order_number}*\n\n`;
-                    message += `*Items:*\n`;
-                    
-                    order.items.forEach((item) => {
-                        let price = item.price;
-                        if (item.discount) {
-                            price -= item.discount;
-                        }
-                        
-                        message += `${item.quantity}x ${item.title} - $${(price * item.quantity).toFixed(2)}\n`;
-                    });
-                    
-                    message += `\n*Total: $${order.total.toFixed(2)}*\n\n`;
-                    message += `*Delivery Address:*\n${order.address}\n\n`;
-                    message += `*Contact:*\n${order.phone}\n\n`;
-                    
-                    if (order.gift_message) {
-                        message += `*Gift Message:*\n${order.gift_message}\n\n`;
+    // Generate WhatsApp link
+    fetch(`/flower-lab/ajax/order.php?action=details&orderNumber=${orderNumber}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const order = data.order;
+                
+                // Build message
+                let message = `*New Order #${order.order_number}*\n\n`;
+                message += `*Customer Information:*\n`;
+                message += `Name: ${order.name}\n`;
+                message += `Phone: ${order.phone}\n\n`;
+                
+                message += `*Items:*\n`;
+                
+                order.items.forEach((item) => {
+                    let price = item.price;
+                    if (item.discount) {
+                        price -= item.discount;
                     }
                     
-                    // Encode for URL
-                    const encodedMessage = encodeURIComponent(message);
-                    
-                    // Use the globally defined WhatsApp number
-                    const whatsappNumber = "<?= WHATSAPP_NUMBER ?>";
-                    const whatsappLink = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
-                    
-                    // Open WhatsApp link
-                    window.open(whatsappLink, '_blank');
-                } else {
-                    showModernNotification({
-                        type: 'error',
-                        title: 'Error',
-                        message: 'Error generating WhatsApp link: ' + (data.message || 'Unknown error')
+                    message += `${item.quantity}x ${item.title} - $${(price * item.quantity).toFixed(2)}\n`;
+                });
+                
+                message += `\n*Total: $${order.total.toFixed(2)}*\n\n`;
+                message += `*Delivery Information:*\n`;
+                message += `Address: ${order.address}\n`;
+                
+                if (order.delivery_date) {
+                    const deliveryDate = new Date(order.delivery_date);
+                    const formattedDate = deliveryDate.toLocaleDateString('en-US', { 
+                        weekday: 'long',
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
                     });
+                    message += `Delivery Date: ${formattedDate}\n\n`;
                 }
-            })
-            .catch(error => {
-                console.error('Error generating WhatsApp link:', error);
+                
+                if (order.gift_message) {
+                    message += `*Gift Message:*\n${order.gift_message}\n\n`;
+                }
+                
+                // Encode for URL
+                const encodedMessage = encodeURIComponent(message);
+                
+                // Use the globally defined WhatsApp number
+                const whatsappNumber = "<?= WHATSAPP_NUMBER ?>";
+                const whatsappLink = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+                
+                // Open WhatsApp link
+                window.open(whatsappLink, '_blank');
+            } else {
                 showModernNotification({
                     type: 'error',
                     title: 'Error',
-                    message: 'Failed to generate WhatsApp link'
+                    message: 'Error generating WhatsApp link: ' + (data.message || 'Unknown error')
                 });
+            }
+        })
+        .catch(error => {
+            console.error('Error generating WhatsApp link:', error);
+            showModernNotification({
+                type: 'error',
+                title: 'Error',
+                message: 'Failed to generate WhatsApp link'
             });
-    }
+        });
+}
 </script>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>

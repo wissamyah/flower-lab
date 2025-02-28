@@ -35,8 +35,40 @@ if ($userId) {
     }
 }
 
+// Get delivery settings
+$deliveryRate = 0;
+$freeDeliveryThreshold = 0;
+
+$settingsQuery = "SELECT * FROM settings WHERE setting_key IN ('delivery_rate', 'free_delivery_threshold')";
+$settingsResult = $db->query($settingsQuery);
+
+if ($settingsResult && $settingsResult->num_rows > 0) {
+    while ($setting = $settingsResult->fetch_assoc()) {
+        if ($setting['setting_key'] === 'delivery_rate') {
+            $deliveryRate = floatval($setting['setting_value']);
+        } elseif ($setting['setting_key'] === 'free_delivery_threshold') {
+            $freeDeliveryThreshold = floatval($setting['setting_value']);
+        }
+    }
+}
+
+// Calculate if this order qualifies for free delivery
+$freeDelivery = ($freeDeliveryThreshold > 0 && $totalPrice >= $freeDeliveryThreshold) || $deliveryRate <= 0;
+
+// Calculate the final total with delivery
+$finalTotal = $totalPrice;
+if (!$freeDelivery) {
+    $finalTotal += $deliveryRate;
+}
+
 // Get user info
 $user = getCurrentUser();
+
+// Check if delivery_date column exists in the orders table
+$deliveryDateExists = false;
+$checkColumnQuery = "SHOW COLUMNS FROM `orders` LIKE 'delivery_date'";
+$columnResult = $db->query($checkColumnQuery);
+$deliveryDateExists = ($columnResult && $columnResult->num_rows > 0);
 ?>
 
 <div class="max-w-6xl mx-auto px-4 py-8">
@@ -78,6 +110,21 @@ $user = getCurrentUser();
                             <textarea id="address" name="address" rows="3" 
                                       class="w-full p-2 border border-gray-300 rounded" required><?= htmlspecialchars($user['address'] ?? '') ?></textarea>
                         </div>
+                        
+                        <?php if ($deliveryDateExists): ?>
+                        <div class="mb-4">
+                            <label for="delivery_date" class="block text-sm font-medium text-gray-700 mb-1">Delivery Date</label>
+                            <?php
+                            // Set minimum date to tomorrow and maximum date to 30 days from now
+                            $minDate = date('Y-m-d', strtotime('+1 day'));
+                            $maxDate = date('Y-m-d', strtotime('+30 days'));
+                            ?>
+                            <input type="date" id="delivery_date" name="delivery_date" 
+                                   min="<?= $minDate ?>" max="<?= $maxDate ?>"
+                                   class="w-full p-2 border border-gray-300 rounded" required>
+                            <p class="text-xs text-gray-500 mt-1">Please select a delivery date (between tomorrow and 30 days from now)</p>
+                        </div>
+                        <?php endif; ?>
                         
                         <div class="mb-4">
                             <label for="gift_message" class="block text-sm font-medium text-gray-700 mb-1">Gift Message (optional)</label>
@@ -128,19 +175,37 @@ $user = getCurrentUser();
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">Delivery</span>
-                            <span class="font-medium">Free</span>
+                            <?php if ($freeDelivery): ?>
+                                <span class="font-medium text-green-600">Free</span>
+                            <?php else: ?>
+                                <span class="font-medium">$<?= number_format($deliveryRate, 2) ?></span>
+                            <?php endif; ?>
                         </div>
+                        <?php if ($freeDeliveryThreshold > 0 && !$freeDelivery): ?>
+                        <div class="flex justify-between" style="font-size: 8pt;">
+                            <span class="text-green-600">Free delivery on orders over $<?= number_format($freeDeliveryThreshold, 2) ?></span>
+                            <span class="text-green-600">
+                                $<?= number_format($freeDeliveryThreshold - $totalPrice, 2) ?> away
+                            </span>
+                        </div>
+                        <?php endif; ?>
                         <div class="border-t border-gray-100 pt-2 mt-2">
                             <div class="flex justify-between">
                                 <span class="font-medium text-gray-800">Total</span>
-                                <span class="font-bold text-primary-dark">$<?= number_format($totalPrice, 2) ?></span>
+                                <span class="font-bold text-primary-dark">$<?= number_format($finalTotal, 2) ?></span>
                             </div>
                         </div>
                     </div>
                     
                     <div class="text-sm text-gray-500">
                         <p class="mb-2"><i data-lucide="info" class="inline-block h-4 w-4 mr-1"></i> Payment on delivery</p>
-                        <p><i data-lucide="truck" class="inline-block h-4 w-4 mr-1"></i> Free delivery in local area</p>
+                        <p><i data-lucide="truck" class="inline-block h-4 w-4 mr-1"></i> 
+                            <?php if ($freeDelivery): ?>
+                                Free delivery in local area
+                            <?php else: ?>
+                                Delivery charge: $<?= number_format($deliveryRate, 2) ?>
+                            <?php endif; ?>
+                        </p>
                     </div>
                 </div>
             </div>
@@ -149,11 +214,13 @@ $user = getCurrentUser();
 </div>
 
 <script>
-
     // Only define WHATSAPP_NUMBER if not already defined
     if (typeof WHATSAPP_NUMBER === 'undefined') {
         const WHATSAPP_NUMBER = "<?= WHATSAPP_NUMBER ?>";
     }
+
+    // Check if delivery date column exists in database
+    const deliveryDateExists = <?= json_encode($deliveryDateExists) ?>;
 
     document.addEventListener('DOMContentLoaded', function() {
         // Show message preview when typing gift message
@@ -172,6 +239,14 @@ $user = getCurrentUser();
             });
         }
         
+        // Set default delivery date to tomorrow if the field exists
+        const deliveryDateField = document.getElementById('delivery_date');
+        if (deliveryDateField) {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            deliveryDateField.value = tomorrow.toISOString().split('T')[0];
+        }
+        
         // Handle form submission
         const checkoutForm = document.getElementById('checkout-form');
         
@@ -186,6 +261,14 @@ $user = getCurrentUser();
                     address: document.getElementById('address').value,
                     gift_message: document.getElementById('gift_message').value
                 };
+                
+                // Only add delivery date if the field exists in the database
+                if (deliveryDateExists) {
+                    const deliveryDateField = document.getElementById('delivery_date');
+                    if (deliveryDateField) {
+                        formData.delivery_date = deliveryDateField.value;
+                    }
+                }
                 
                 // Create order
                 createOrder(formData)
@@ -214,47 +297,79 @@ $user = getCurrentUser();
             });
         }
 
-            // Function to generate WhatsApp link
-            function generateWhatsAppLink(orderNumber) {
-        return fetch(`/flower-lab/ajax/order.php?action=details&orderNumber=${orderNumber}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const order = data.order;
-                    
-                    // Build message
-                    let message = `*New Order #${order.order_number}*\n\n`;
-                    message += `*Items:*\n`;
-                    
-                    order.items.forEach((item) => {
-                        let price = item.price;
-                        if (item.discount) {
-                            price -= item.discount;
+        // Function to generate WhatsApp link
+        function generateWhatsAppLink(orderNumber) {
+            return fetch(`/flower-lab/ajax/order.php?action=details&orderNumber=${orderNumber}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const order = data.order;
+                        
+                        // Build message
+                        let message = `*New Order #${order.order_number}*\n\n`;
+                        message += `*Customer Information:*\n`;
+                        message += `Name: ${order.name}\n`;
+                        message += `Phone: ${order.phone}\n\n`;
+                        
+                        message += `*Items:*\n`;
+                        
+                        order.items.forEach((item) => {
+                            let price = item.price;
+                            if (item.discount) {
+                                price -= item.discount;
+                            }
+                            
+                            message += `${item.quantity}x ${item.title} - $${(price * item.quantity).toFixed(2)}\n`;
+                        });
+                        
+                        message += `\n*Total: $${order.total.toFixed(2)}*\n\n`;
+                        
+                        // Add delivery information
+                        if (order.delivery_charge > 0) {
+                            message += `*Delivery Charge:* $${Number(order.delivery_charge).toFixed(2)}\n\n`;
                         }
                         
-                        message += `${item.quantity}x ${item.title} - $${(price * item.quantity).toFixed(2)}\n`;
-                    });
-                    
-                    message += `\n*Total: $${order.total.toFixed(2)}*\n\n`;
-                    message += `*Delivery Address:*\n${order.address}\n\n`;
-                    message += `*Contact:*\n${order.phone}\n\n`;
-                    
-                    if (order.gift_message) {
-                        message += `*Gift Message:*\n${order.gift_message}\n\n`;
+                        message += `*Delivery Information:*\n`;
+                        message += `Address: ${order.address}\n`;
+                        
+                        if (order.delivery_date) {
+                            try {
+                                const deliveryDate = new Date(order.delivery_date);
+                                const formattedDate = deliveryDate.toLocaleDateString('en-US', { 
+                                    weekday: 'long',
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                });
+                                message += `Delivery Date: ${formattedDate}\n\n`;
+                            } catch (e) {
+                                console.error('Error formatting delivery date:', e);
+                                // If date formatting fails, just include the raw date
+                                message += `Delivery Date: ${order.delivery_date}\n\n`;
+                            }
+                        }
+                        
+                        if (order.gift_message) {
+                            message += `*Gift Message:*\n${order.gift_message}\n\n`;
+                        }
+                        
+                        // Encode for URL
+                        const encodedMessage = encodeURIComponent(message);
+                        
+                        // Generate WhatsApp link using the global constant
+                        const whatsappLink = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
+                        
+                        return whatsappLink;
+                    } else {
+                        throw new Error(data.message || "Error generating WhatsApp link");
                     }
-                    
-                    // Encode for URL
-                    const encodedMessage = encodeURIComponent(message);
-                    
-                    // Generate WhatsApp link using the global constant
-                    const whatsappLink = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
-                    
-                    return whatsappLink;
-                } else {
-                    throw new Error(data.message || "Error generating WhatsApp link");
-                }
-            });
-    }
+                })
+                .catch(error => {
+                    console.error('Error generating WhatsApp link:', error);
+                    // Return a basic link with just the order number as fallback
+                    return `https://wa.me/${WHATSAPP_NUMBER}?text=New Order %23${orderNumber}`;
+                });
+        }
     });
 </script>
 

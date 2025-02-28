@@ -140,7 +140,7 @@ if (isset($_GET['id'])) {
 }
 
 // Get all orders for the list
-$allOrdersQuery = "SELECT o.*, u.name as customer_name FROM orders o 
+$allOrdersQuery = "SELECT o.*, u.name as customer_name, u.phone_number as customer_phone FROM orders o 
                   JOIN users u ON o.user_id = u.id 
                   ORDER BY o.created_at DESC";
 $allOrdersResult = $db->query($allOrdersQuery);
@@ -182,6 +182,9 @@ while ($row = $allOrdersResult->fetch_assoc()) {
                                 <h3 class="text-sm font-medium text-gray-500 mb-1">Order Details</h3>
                                 <p class="text-gray-800 mb-1"><span class="font-medium">Order Number:</span> <?= htmlspecialchars($order['order_number']) ?></p>
                                 <p class="text-gray-800 mb-1"><span class="font-medium">Date:</span> <?= date('F j, Y g:i A', strtotime($order['created_at'])) ?></p>
+                                <?php if (isset($order['delivery_date']) && !empty($order['delivery_date'])): ?>
+                                    <p class="text-gray-800 mb-1"><span class="font-medium">Delivery Date:</span> <?= date('F j, Y', strtotime($order['delivery_date'])) ?></p>
+                                <?php endif; ?>
                                 
                                 <?php
                                 $statusClass = '';
@@ -212,7 +215,7 @@ while ($row = $allOrdersResult->fetch_assoc()) {
                                 <h3 class="text-sm font-medium text-gray-500 mb-1">Customer Information</h3>
                                 <p class="text-gray-800 mb-1"><span class="font-medium">Name:</span> <?= htmlspecialchars($order['name']) ?></p>
                                 <p class="text-gray-800 mb-1"><span class="font-medium">Email:</span> <?= htmlspecialchars($order['email']) ?></p>
-                                <p class="text-gray-800 mb-1"><span class="font-medium">Phone:</span> <?= htmlspecialchars($order['phone']) ?></p>
+                                <p class="text-gray-800 mb-1"><span class="font-medium">Phone:</span> <?= htmlspecialchars($order['phone_number']) ?></p>
                                 <p class="text-gray-800 mb-1"><span class="font-medium">Address:</span> <?= htmlspecialchars($order['address']) ?></p>
                             </div>
                         </div>
@@ -352,6 +355,7 @@ while ($row = $allOrdersResult->fetch_assoc()) {
                                     <tr>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Number</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -365,6 +369,9 @@ while ($row = $allOrdersResult->fetch_assoc()) {
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <span class="text-gray-800"><?= htmlspecialchars($o['customer_name']) ?></span>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <span class="text-gray-800"><?= htmlspecialchars($o['customer_phone']) ?></span>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <span class="text-gray-600"><?= date('M d, Y', strtotime($o['created_at'])) ?></span>
@@ -424,7 +431,10 @@ while ($row = $allOrdersResult->fetch_assoc()) {
                                         <span class="text-sm text-gray-600"><?= date('M d', strtotime($o['created_at'])) ?></span>
                                     </div>
                                     <div class="mt-1 flex justify-between items-center">
-                                        <span class="text-sm text-gray-600"><?= htmlspecialchars($o['customer_name']) ?></span>
+                                        <div>
+                                            <span class="text-sm text-gray-600"><?= htmlspecialchars($o['customer_name']) ?></span>
+                                            <span class="text-sm text-gray-600 block"><?= htmlspecialchars($o['customer_phone']) ?></span>
+                                        </div>
                                         <?php
                                         $statusClass = '';
                                         switch ($o['status']) {

@@ -287,10 +287,10 @@ while ($row = $productsResult->fetch_assoc()) {
                             <!-- Add delete button outside the link but within the list item -->
                             <div class="px-4 pb-2 text-right">
                                 <button type="button" 
-                                        class="text-xs text-red-600 hover:text-red-800" 
+                                        class="text-xs text-red-600 hover:text-red-800 flex items-center justify-end ml-auto" 
                                         onclick="deleteProduct(<?= $p['id'] ?>, '<?= addslashes(htmlspecialchars($p['title'])) ?>')">
-                                    <i data-lucide="trash-2" class="h-3 w-3 inline-block mr-1"></i>
-                                    Delete
+                                    <i data-lucide="trash-2" class="h-3 w-3 mr-1"></i>
+                                    <span>Delete</span>
                                 </button>
                             </div>
                         </li>

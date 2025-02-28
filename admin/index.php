@@ -93,6 +93,7 @@ while ($order = $ordersResult->fetch_assoc()) {
     </div>
     
     <!-- Quick Links -->
+
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <a href="/flower-lab/admin/items.php" class="bg-white rounded-lg shadow-sm p-5 flex items-center hover:bg-gray-50 transition">
             <div class="p-3 rounded-full bg-primary-light text-primary-dark mr-3">
@@ -124,79 +125,143 @@ while ($order = $ordersResult->fetch_assoc()) {
             </div>
         </a>
     </div>
-    
-    <!-- Recent Orders -->
-    <div class="bg-white rounded-lg shadow-sm overflow-hidden mb-8">
-        <div class="p-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
-            <h2 class="font-medium text-gray-800">Recent Orders</h2>
-            <a href="/flower-lab/admin/orders.php" class="text-sm text-primary-dark hover:underline">View All</a>
+
+    <!-- Add new Delivery Settings Card below the existing cards -->
+
+        <div class="bg-white rounded-lg shadow-sm overflow-hidden mb-8">
+            <div class="p-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                <h2 class="font-medium text-gray-800">Delivery Settings</h2>
+                <a href="/flower-lab/admin/delivery_settings.php" class="text-primary-dark hover:underline">
+                    Edit <i data-lucide="settings" class="h-6 w-6"></i>
+                </a>
+            </div>
+            
+            <div class="p-6">
+                <?php
+                // Get delivery settings
+                $deliveryRate = "0.00";
+                $freeDeliveryThreshold = "0.00";
+                
+                $query = "SELECT * FROM settings WHERE setting_key IN ('delivery_rate', 'free_delivery_threshold')";
+                $result = $db->query($query);
+                
+                if ($result && $result->num_rows > 0) {
+                    while ($row = $result->fetch_assoc()) {
+                        if ($row['setting_key'] === 'delivery_rate') {
+                            $deliveryRate = $row['setting_value'];
+                        } elseif ($row['setting_key'] === 'free_delivery_threshold') {
+                            $freeDeliveryThreshold = $row['setting_value'];
+                        }
+                    }
+                }
+                ?>
+                
+                <div class="flex items-center mb-4">
+                    <div class="p-3 rounded-full bg-primary-light text-primary-dark mr-4">
+                        <i data-lucide="truck" class="h-6 w-6"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Standard Delivery Rate</p>
+                        <h3 class="text-xl font-bold text-gray-800">
+                            <?php if (floatval($deliveryRate) > 0): ?>
+                                $<?= $deliveryRate ?>
+                            <?php else: ?>
+                                Free
+                            <?php endif; ?>
+                        </h3>
+                    </div>
+                </div>
+                
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-green-50 text-green-500 mr-4">
+                        <i data-lucide="tag" class="h-6 w-6"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Free Delivery Threshold</p>
+                        <h3 class="text-xl font-bold text-gray-800">
+                            <?php if (floatval($freeDeliveryThreshold) > 0): ?>
+                                Orders over $<?= $freeDeliveryThreshold ?>
+                            <?php else: ?>
+                                Not set
+                            <?php endif; ?>
+                        </h3>
+                    </div>
+                </div>
+            </div>
         </div>
         
-        <div class="overflow-x-auto">
-            <?php if (empty($recentOrders)): ?>
-                <div class="p-8 text-center">
-                    <p class="text-gray-500">No orders yet</p>
-                </div>
-            <?php else: ?>
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        <?php foreach ($recentOrders as $order): ?>
+        <!-- Recent Orders -->
+        <div class="bg-white rounded-lg shadow-sm overflow-hidden mb-8">
+            <div class="p-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                <h2 class="font-medium text-gray-800">Recent Orders</h2>
+                <a href="/flower-lab/admin/orders.php" class="text-sm text-primary-dark hover:underline">View All</a>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <?php if (empty($recentOrders)): ?>
+                    <div class="p-8 text-center">
+                        <p class="text-gray-500">No orders yet</p>
+                    </div>
+                <?php else: ?>
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
                             <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="font-medium text-gray-800"><?= htmlspecialchars($order['order_number']) ?></span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div>
-                                        <div class="text-sm font-medium text-gray-800"><?= htmlspecialchars($order['customer_name']) ?></div>
-                                        <div class="text-sm text-gray-500"><?= htmlspecialchars($order['customer_email']) ?></div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="text-sm text-gray-600"><?= date('M d, Y', strtotime($order['created_at'])) ?></span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <?php
-                                    $statusClass = '';
-                                    switch ($order['status']) {
-                                        case 'Pending':
-                                            $statusClass = 'bg-yellow-50 text-yellow-800';
-                                            break;
-                                        case 'Confirmed':
-                                            $statusClass = 'bg-blue-50 text-blue-800';
-                                            break;
-                                        case 'Completed':
-                                            $statusClass = 'bg-green-50 text-green-800';
-                                            break;
-                                        case 'Cancelled':
-                                            $statusClass = 'bg-red-50 text-red-800';
-                                            break;
-                                    }
-                                    ?>
-                                    <span class="px-2 py-1 text-xs rounded-full <?= $statusClass ?>">
-                                        <?= htmlspecialchars($order['status']) ?>
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                    <a href="/flower-lab/admin/orders.php?id=<?= $order['id'] ?>" class="text-primary-dark hover:underline">
-                                        View Details
-                                    </a>
-                                </td>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php endif; ?>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <?php foreach ($recentOrders as $order): ?>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="font-medium text-gray-800"><?= htmlspecialchars($order['order_number']) ?></span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div>
+                                            <div class="text-sm font-medium text-gray-800"><?= htmlspecialchars($order['customer_name']) ?></div>
+                                            <div class="text-sm text-gray-500"><?= htmlspecialchars($order['customer_email']) ?></div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="text-sm text-gray-600"><?= date('M d, Y', strtotime($order['created_at'])) ?></span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <?php
+                                        $statusClass = '';
+                                        switch ($order['status']) {
+                                            case 'Pending':
+                                                $statusClass = 'bg-yellow-50 text-yellow-800';
+                                                break;
+                                            case 'Confirmed':
+                                                $statusClass = 'bg-blue-50 text-blue-800';
+                                                break;
+                                            case 'Completed':
+                                                $statusClass = 'bg-green-50 text-green-800';
+                                                break;
+                                            case 'Cancelled':
+                                                $statusClass = 'bg-red-50 text-red-800';
+                                                break;
+                                        }
+                                        ?>
+                                        <span class="px-2 py-1 text-xs rounded-full <?= $statusClass ?>">
+                                            <?= htmlspecialchars($order['status']) ?>
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        <a href="/flower-lab/admin/orders.php?id=<?= $order['id'] ?>" class="text-primary-dark hover:underline">
+                                            View Details
+                                        </a>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
-</div>
 
 <?php include dirname(__DIR__) . '/includes/footer.php'; ?>

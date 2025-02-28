@@ -40,16 +40,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $itemsResult = $itemsStmt->get_result();
     
     $items = [];
-    $total = 0;
+    $subtotal = 0;
     
     while ($item = $itemsResult->fetch_assoc()) {
         $items[] = $item;
         $itemTotal = ($item['price'] - ($item['discount'] ?? 0)) * $item['quantity'];
-        $total += $itemTotal;
+        $subtotal += $itemTotal;
     }
     
     $order['items'] = $items;
-    $order['total'] = $total;
+    
+    // Include delivery charge in total if present
+    $deliveryCharge = isset($order['delivery_charge']) ? (float)$order['delivery_charge'] : 0;
+    $order['total'] = $subtotal + $deliveryCharge;
     
     echo json_encode([
         'success' => true,
@@ -99,6 +102,7 @@ switch ($action) {
         $phone = $input['phone'];
         $address = $input['address'];
         $giftMessage = $input['gift_message'] ?? null;
+        $deliveryDate = $input['delivery_date'] ?? null;
         
         // Start transaction
         $db->begin_transaction();
@@ -127,14 +131,58 @@ switch ($action) {
                 $basketItems[] = $item;
             }
             
+            // Get delivery settings
+            $deliveryRate = 0;
+            $freeDeliveryThreshold = 0;
+
+            $settingsQuery = "SELECT * FROM settings WHERE setting_key IN ('delivery_rate', 'free_delivery_threshold')";
+            $settingsResult = $db->query($settingsQuery);
+
+            if ($settingsResult && $settingsResult->num_rows > 0) {
+                while ($setting = $settingsResult->fetch_assoc()) {
+                    if ($setting['setting_key'] === 'delivery_rate') {
+                        $deliveryRate = floatval($setting['setting_value']);
+                    } elseif ($setting['setting_key'] === 'free_delivery_threshold') {
+                        $freeDeliveryThreshold = floatval($setting['setting_value']);
+                    }
+                }
+            }
+
+            // Calculate subtotal from basket items
+            $subtotal = 0;
+            foreach ($basketItems as $item) {
+                $itemSubtotal = $item['price'] * $item['quantity'];
+                $itemDiscount = $item['discount'] ? $item['discount'] * $item['quantity'] : 0;
+                $subtotal += ($itemSubtotal - $itemDiscount);
+            }
+
+            // Calculate if eligible for free delivery
+            $freeDelivery = ($freeDeliveryThreshold > 0 && $subtotal >= $freeDeliveryThreshold) || $deliveryRate <= 0;
+
+            // Calculate delivery charge
+            $deliveryCharge = $freeDelivery ? 0 : $deliveryRate;
+            
             // Generate order number
             $orderNumber = ORDER_PREFIX . date('Ymd') . sprintf('%04d', rand(1, 9999));
             
-            // Create order
-            $orderQuery = "INSERT INTO orders (order_number, user_id, address, phone, gift_message, status) 
-                          VALUES (?, ?, ?, ?, ?, 'Pending')";
-            $orderStmt = $db->prepare($orderQuery);
-            $orderStmt->bind_param("sisss", $orderNumber, $userId, $address, $phone, $giftMessage);
+            // Check if delivery_date column exists in the orders table
+            $checkColumnQuery = "SHOW COLUMNS FROM `orders` LIKE 'delivery_date'";
+            $columnResult = $db->query($checkColumnQuery);
+            $deliveryDateColumnExists = ($columnResult && $columnResult->num_rows > 0);
+            
+            // Create order with appropriate fields based on what exists in the database
+            if ($deliveryDateColumnExists && $deliveryDate) {
+                $orderQuery = "INSERT INTO orders (order_number, user_id, address, phone, gift_message, status, delivery_charge, delivery_date) 
+                              VALUES (?, ?, ?, ?, ?, 'Pending', ?, ?)";
+                $orderStmt = $db->prepare($orderQuery);
+                $orderStmt->bind_param("sisssds", $orderNumber, $userId, $address, $phone, $giftMessage, $deliveryCharge, $deliveryDate);
+            } else {
+                $orderQuery = "INSERT INTO orders (order_number, user_id, address, phone, gift_message, status, delivery_charge) 
+                              VALUES (?, ?, ?, ?, ?, 'Pending', ?)";
+                $orderStmt = $db->prepare($orderQuery);
+                $orderStmt->bind_param("sisssd", $orderNumber, $userId, $address, $phone, $giftMessage, $deliveryCharge);
+            }
+            
             $orderStmt->execute();
             $orderId = $db->insert_id;
             

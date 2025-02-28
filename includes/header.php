@@ -104,11 +104,6 @@ require_once dirname(__DIR__) . '/includes/auth.php';
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block mr-1"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
                                 Wishlist
                             </a>
-                        <?php else: ?>
-                            <a href="/flower-lab/login.php" class="px-3 py-2 rounded-md text-sm font-medium text-white bg-primary hover:bg-primary-dark flex items-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block mr-1"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"></path></svg>
-                                Sign In
-                            </a>
                         <?php endif; ?>
                         <?php if (isAdmin()): ?>
                             <a href="/flower-lab/admin/" class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-primary-dark hover:bg-gray-50 flex items-center">
@@ -120,11 +115,11 @@ require_once dirname(__DIR__) . '/includes/auth.php';
                 </div>
                 
                 <div class="flex items-center space-x-2">
-                <a href="/flower-lab/basket.php" class="p-2 rounded-full text-gray-600 hover:text-primary-dark hover:bg-gray-100" aria-label="Basket">
-                    <i data-lucide="shopping-bag" class="h-5 w-5"></i>
-                </a>
+                    <a href="/flower-lab/basket.php" class="p-2 rounded-full text-gray-600 hover:text-primary-dark hover:bg-gray-100" aria-label="Basket">
+                        <i data-lucide="shopping-bag" class="h-5 w-5"></i>
+                    </a>
                 
-                <div class="relative">
+                    <div class="relative">
                         <?php if (isLoggedIn()): ?>
                             <!-- For logged-in users: notification indicator and user profile icon -->
                             <div id="profile-notification-indicator" class="hidden absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-xs text-white font-bold">
@@ -140,10 +135,13 @@ require_once dirname(__DIR__) . '/includes/auth.php';
                                 <?php endif; ?>
                             </a>
                         <?php else: ?>
-                            <!-- For not logged-in users: link to login page -->
-                            <a href="/flower-lab/login.php" id="profile-icon" class="p-2 rounded-full text-gray-600 hover:text-primary-dark hover:bg-gray-100 block" aria-label="Login">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                            </a>
+                            <!-- For not logged-in users: profile icon with Sign In label -->
+                            <div class="flex items-center">
+                                <span class="mr-1 text-sm text-gray-600 hidden sm:inline-block">Sign In</span>
+                                <a href="/flower-lab/login.php" id="profile-icon" class="p-2 rounded-full text-gray-600 hover:text-primary-dark hover:bg-gray-100 block" aria-label="Login">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                </a>
+                            </div>
                         <?php endif; ?>
                     
                         <?php if (isLoggedIn()): ?>
@@ -249,7 +247,7 @@ require_once dirname(__DIR__) . '/includes/auth.php';
                         </a>
                     <?php else: ?>
                         <!-- Not logged-in user menu option -->
-                        <a href="/flower-lab/login.php" class="block px-3 py-2 rounded-md text-base font-medium text-white bg-primary hover:bg-primary-dark text-center flex items-center">
+                        <a href="/flower-lab/login.php" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary-dark hover:bg-gray-50 flex items-center">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block mr-2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"></path></svg>
                             Sign In
                         </a>

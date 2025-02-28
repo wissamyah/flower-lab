@@ -1,0 +1,522 @@
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: #821633;
+    box-shadow: 0 0 0 2px rgba(130, 22, 51, 0.2);
+}
+
+.hover-scale {
+    transition: transform 0.2s ease-in-out;
+}
+
+.hover-scale:hover {
+    transform: scale(1.03);
+}
+
+.card-hover {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.notification {
+    animation: slideIn 0.3s ease-out forwards;
+}
+
+html {
+    overflow-y: scroll;
+}
+
+@media (max-width: 640px) {
+    .mobile-padding {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f7f7f7;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #821633;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #375645;
+}
+
+#profile-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+}
+
+
+/* Ensure hover works correctly */
+
+#profile-icon:hover {
+    background-color: rgba(243, 244, 246, 1);
+    color: #375645;
+}
+
+
+/* Ensure notification modal displays correctly */
+
+#notification-dropdown {
+    display: flex;
+    opacity: 1;
+    visibility: visible;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+    background-color: rgba(0, 0, 0, 0.5);
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+#notification-dropdown.hidden {
+    display: none !important;
+    opacity: 0;
+    visibility: hidden;
+}
+
+
+/* Make sure close button is clickable */
+
+#close-notifications {
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+#close-notifications:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+
+/* Dropdown menu icon alignment */
+
+#user-dropdown a i,
+#user-dropdown button i {
+    vertical-align: middle;
+    position: relative;
+    top: -1px;
+}
+
+
+/* Ensure dropdown menu items have proper padding and alignment */
+
+#user-dropdown a,
+#user-dropdown button {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    transition: background-color 0.2s;
+}
+
+#user-dropdown a:hover,
+#user-dropdown button:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+
+/* Make notification badge position correctly */
+
+#dropdown-notification-badge {
+    margin-left: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    height: 1.25rem;
+}
+
+
+/* Profile icon styling */
+
+#profile-icon {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    transition: all 0.2s ease;
+}
+
+#profile-icon:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: #375645;
+}
+
+
+/* User initial circle */
+
+#profile-icon span {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    font-weight: 500;
+}
+
+
+/* Fix for mobile menu icon alignment */
+
+.md\:hidden a i,
+.md\:hidden button i {
+    vertical-align: middle;
+    margin-right: 0.5rem;
+}
+
+
+/* Fix for profile icon visibility */
+
+#profile-icon svg {
+    display: inline-block;
+    vertical-align: middle;
+    color: currentColor;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+
+/* Perfect circle for profile initial */
+
+#profile-icon span,
+.w-full.h-full.flex.items-center.justify-center.text-sm.font-medium.text-white.bg-primary.rounded-full {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    aspect-ratio: 1/1 !important;
+    overflow: hidden !important;
+}
+
+
+/* Fix for container alignment */
+
+#profile-icon {
+    width: 36px !important;
+    height: 36px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    aspect-ratio: 1/1 !important;
+}
+
+
+/* Fix for any parent container constraints */
+
+.relative #profile-icon {
+    position: relative !important;
+    display: flex !important;
+    width: 36px !important;
+    height: 36px !important;
+    flex-shrink: 0 !important;
+}
+
+
+/* Notification styling */
+
+#notification-dropdown>.relative.bg-white {
+    max-width: 400px !important;
+    width: 100% !important;
+    margin: 0 1rem !important;
+    opacity: 0;
+    transform: translateY(-20px);
+    animation: slideInFade 0.3s ease-out forwards;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+
+/* Animation for slide in from top with fade */
+
+@keyframes slideInFade {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* When closing the modal */
+
+#notification-dropdown.closing>.relative.bg-white {
+    animation: slideOutFade 0.2s ease-in forwards;
+}
+
+@keyframes slideOutFade {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
+
+
+/* Make sure the notification dialog has proper spacing */
+
+#notification-list {
+    max-height: 60vh !important;
+    overflow-y: auto !important;
+}
+
+
+/* Fix navbar icon alignment */
+
+.navbar-icon,
+nav a i,
+nav a svg,
+.ml-10 a i,
+.ml-10 a svg,
+[data-lucide] {
+    vertical-align: text-bottom !important;
+    position: relative !important;
+    top: -0.5px !important;
+    margin-bottom: -0.125rem !important;
+    display: inline-block !important;
+}
+
+
+/* Specific fix for navbar links */
+
+nav a .inline-block,
+.hidden.md\:block a .inline-block,
+.ml-10 a .inline-block {
+    display: inline-block !important;
+    vertical-align: text-bottom !important;
+    position: relative !important;
+    top: -1px !important;
+}
+
+
+/* Ensure text and icons are properly aligned */
+
+.icon-align {
+    display: inline-block;
+    vertical-align: text-bottom;
+    position: relative;
+    margin-right: 0.25rem;
+}
+
+
+/* Use this to fix alignments in other places */
+
+.icon-align svg,
+.icon-align [data-lucide] {
+    vertical-align: text-bottom;
+    position: relative;
+    top: -1px;
+}
+
+
+/* Profile notification indicator */
+
+#profile-notification-indicator {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 16px;
+    height: 16px;
+    background-color: #ea3f46;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: white;
+    font-weight: bold;
+    border: 1px solid white;
+    z-index: 10;
+}
+
+
+/* Make sure the notification count is centered */
+
+#notification-count {
+    position: relative;
+    top: -0.5px;
+}
+
+
+/* Better hover effect for profile icon with notification */
+
+#profile-icon:hover #profile-notification-indicator {
+    background-color: #375645;
+    transform: scale(1.1);
+    transition: all 0.2s ease;
+}
+
+
+/* Animation for new notifications */
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.new-notification {
+    animation: pulse 1s ease-in-out;
+}
+
+
+/* Add these styles to your styles.css file to ensure consistent form elements */
+
+
+/* Consistent form input height */
+
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="url"],
+select,
+textarea {
+    height: 2.5rem;
+    /* 40px with default font size */
+    padding: 0.5rem 0.75rem;
+    line-height: 1.5;
+}
+
+
+/* Input group styling for side-by-side elements */
+
+.input-group {
+    display: flex;
+    align-items: stretch;
+}
+
+.input-group>input {
+    flex: 1 1 auto;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.input-group>.input-group-append {
+    display: flex;
+}
+
+.input-group-append>button,
+.input-group-append>label {
+    height: 2.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-left: 0;
+}
+
+
+/* Fix for browse button and text input alignment */
+
+.product-image-upload {
+    display: flex;
+    align-items: stretch;
+    margin-bottom: 0.5rem;
+}
+
+.product-image-upload>.input-field {
+    flex: 1;
+    position: relative;
+}
+
+.product-image-upload>.browse-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 1rem;
+    border: 1px solid #d1d5db;
+    border-left: 0;
+    border-top-right-radius: 0.25rem;
+    border-bottom-right-radius: 0.25rem;
+    background-color: #f9fafb;
+    color: #4b5563;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.product-image-upload>.browse-button:hover {
+    background-color: #f3f4f6;
+}
+
+.product-image-upload>.input-field>input {
+    width: 100%;
+    height: 2.5rem;
+    padding: 0 0.75rem;
+    border: 1px solid #d1d5db;
+    border-right: 0;
+    border-top-left-radius: 0.25rem;
+    border-bottom-left-radius: 0.25rem;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}

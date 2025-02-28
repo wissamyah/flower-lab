@@ -1,0 +1,92 @@
+/* Main container styling */
+
+.firebaseui-container {
+    font-family: inherit !important;
+    max-width: 100% !important;
+}
+
+
+/* Card styling */
+
+.firebaseui-card-content {
+    padding: 16px !important;
+}
+
+.firebaseui-card-header {
+    padding: 20px 20px 0 !important;
+}
+
+.firebaseui-card-actions {
+    padding: 16px !important;
+}
+
+
+/* Button styling */
+
+.firebaseui-button {
+    border-radius: 0.375rem !important;
+    font-weight: 500 !important;
+    transition: all 0.2s !important;
+}
+
+.firebaseui-id-submit {
+    background-color: #821633 !important;
+    color: white !important;
+}
+
+.firebaseui-id-submit:hover {
+    background-color: #375645 !important;
+}
+
+
+/* Provider buttons */
+
+.firebaseui-idp-button {
+    border-radius: 0.375rem !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+    height: auto !important;
+    min-height: 44px !important;
+    padding: 10px 16px !important;
+    font-family: inherit !important;
+    font-weight: 500 !important;
+}
+
+.firebaseui-idp-text {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+}
+
+.firebaseui-idp-google {
+    color: #757575 !important;
+}
+
+.firebaseui-idp-google:hover {
+    background-color: #f8f8f8 !important;
+}
+
+.firebaseui-idp-email,
+.firebaseui-idp-password {
+    background-color: #821633 !important;
+}
+
+.firebaseui-idp-email:hover,
+.firebaseui-idp-password:hover {
+    background-color: #375645 !important;
+}
+
+
+/* Input fields */
+
+.firebaseui-input,
+.firebaseui-input-floating-button {
+    font-family: inherit !important;
+    height: 44px !important;
+    line-height: 24px !important;
+    border-radius: 0.375rem !important;
+    border: 1px solid #e5e7eb !important;
+}
+
+.firebaseui-input:focus {
+    border-color: #821633 !important;
+    box-shadow: 0 0 0 2px rgba(130, 22, 51, 0.2) !important;
+}
